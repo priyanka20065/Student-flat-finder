@@ -1,15 +1,582 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+/* --- Modern Glass Header & Footer --- */
+.glass-nav {
+  background: rgba(30, 18, 48, 0.82);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 24px rgba(30,18,48,0.13);
+  border-bottom: 1px solid var(--line-soft);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5em 2em;
+}
+.nav-profile {
+  margin-left: 1.5em;
+  display: flex;
+  align-items: center;
+}
+.profile-icon svg {
+  display: block;
+  width: 28px;
+  height: 28px;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+.profile-icon:hover svg {
+  opacity: 1;
+}
+.glass-footer {
+  background: rgba(30, 18, 48, 0.92);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line-soft);
+  box-shadow: 0 -2px 24px rgba(30,18,48,0.13);
+  padding: 1.5em 0 1em 0;
+  margin-top: 3em;
+}
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5em;
+  padding: 0 2em;
+}
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  font-size: 1.1em;
+  color: var(--text-heading);
+}
+.footer-copy {
+  color: var(--text-muted);
+  font-size: 0.95em;
+}
+.footer-links {
+  display: flex;
+  gap: 1.2em;
+}
+.footer-links a {
+  color: var(--text-main);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.footer-links a:hover {
+  color: var(--primary);
+}
+.footer-social {
+  display: flex;
+  gap: 0.7em;
+}
+.footer-social-icon svg {
+  width: 22px;
+  height: 22px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.footer-social-icon:hover svg {
+  opacity: 1;
+}
+@media (max-width: 700px) {
+  .nav-inner, .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.5em 1em;
+  }
+  .footer-links {
+    margin: 0.7em 0;
+  }
+}
+/* Roommate Info Table Styles */
+.roommate-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5em;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 1rem;
+}
+.roommate-table th, .roommate-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text-main);
+}
+.roommate-table th {
+  background: rgba(30, 18, 48, 0.85);
+  color: var(--text-heading);
+  font-weight: 600;
+}
+.roommate-table tr:last-child td {
+  border-bottom: none;
+}
+.roommate-table .muted {
+  color: var(--text-muted);
+  text-align: center;
+}
+/* Flat description: black for visibility */
+.flat-desc-black {
+  color: #111;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 400;
+}
+/* Flat title: bold and dark for visibility */
+.flat-title-dark {
+  color: #e4e9f1;
+  font-weight: 800;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  background: none;
+  padding: 0;
+  display: inline-block;
+  letter-spacing: 0.01em;
+}
+/* Make flat title visible and bold */
+.flat-title {
+  color: #1a237e;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  background: none;
+  padding: 0;
+  display: inline-block;
+}
+/* Quiz Form Modern UI */
+.simple-form {
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: 0 6px 32px rgba(30,18,48,0.18);
+  padding: 2.2em 2em 1.5em 2em;
+  max-width: 480px;
+  margin: 2em auto 1.5em auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2em;
+}
+.simple-form label {
+  color: var(--text-heading);
+  font-weight: 500;
+  margin-bottom: 0.3em;
+  font-size: 1.08rem;
+}
+.simple-form input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+  margin-top: 0.5em;
+  margin-bottom: 0.2em;
+}
+.simple-form output {
+  font-size: 1.1em;
+  color: var(--primary);
+  font-weight: 600;
+}
+.choice-card {
+  display: flex;
+  gap: 2em;
+  margin: 0.5em 0 0.7em 0;
+}
+.choice-card label {
+  color: var(--text-main);
+  font-weight: 400;
+  font-size: 1.05em;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.simple-form input[type="radio"]:checked {
+  accent-color: var(--primary);
+}
+.amenities-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 18px;
+  margin-bottom: 8px;
+  margin-top: 0.5em;
+}
+.amenities-checkboxes label {
+  font-size: 1em;
+  color: var(--text-main);
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 7px;
+  padding: 0.3em 0.7em;
+  transition: background 0.2s;
+}
+.amenities-checkboxes input[type="checkbox"]:checked + span,
+.amenities-checkboxes input[type="checkbox"]:checked {
+  accent-color: var(--primary);
+  background: rgba(56,189,248,0.13);
+}
+.simple-form textarea {
+  width: 100%;
+  border-radius: 7px;
+  border: 1px solid var(--line-soft);
+  padding: 0.7em;
+  font-size: 1em;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-main);
+  margin-top: 0.3em;
+}
+.simple-form button[type="submit"] {
+  margin-top: 1.2em;
+  font-size: 1.1em;
+  padding: 0.7em 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--primary), var(--hot-pink));
+  color: #fff;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 2px 8px rgba(56,189,248,0.08);
+  transition: background 0.2s;
+}
+.simple-form button[type="submit"]:hover {
+  background: linear-gradient(90deg, var(--hot-pink), var(--primary));
+}
+.simple-form input,
+.simple-form select {
+  border-radius: 7px;
+  border: 1px solid var(--line-soft);
+  padding: 0.5em 0.7em;
+  font-size: 1em;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-main);
+  margin-top: 0.3em;
+}
+.simple-form input[type="radio"],
+.simple-form input[type="checkbox"] {
+  width: 1.1em;
+  height: 1.1em;
+  margin: 0 0.3em 0 0;
+  accent-color: var(--primary);
+}
+.simple-form input[type="text"]:focus,
+.simple-form input[type="number"]:focus,
+.simple-form textarea:focus {
+  outline: 2px solid var(--primary);
+}
+@media (max-width: 600px) {
+  .simple-form {
+    padding: 1.2em 0.7em 1em 0.7em;
+    max-width: 99vw;
+  }
+  .amenities-checkboxes {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* --- Roomora Scene Theme Variables and Classes --- */
+:root {
+  --card: rgba(30, 18, 48, 0.92);
+  --line-soft: rgba(255,255,255,0.10);
+  --pink: #ff4fd8;
+  --hot-pink: #ff3f95;
+  --text-main: #e3e6ed;
+  --text-muted: #b0b8c9;
+  --text-heading: #c9e0f7;
+  --primary: #38bdf8;
+  --primary-hover: #22d3ee;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --ok: #1ecb7c;
+  --err: #ff3f95;
+}
+.auth-scene {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 28px;
+  background: radial-gradient(circle at 20% 30%, #6a5af9 0%, #4f46e5 40%, transparent 70%),
+              radial-gradient(circle at 80% 80%, #ff4fd8 0%, #ff4fd8 40%, transparent 70%),
+              linear-gradient(120deg, #2d1e60 0%, #ff4fd8 100%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+.auth-card {
+  width: min(460px, 100%);
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: 22px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.45);
+  padding: 28px;
+  position: relative;
+  z-index: 2;
+  animation: rise 0.75s ease;
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.auth-header {
+  margin-top: 22px;
+}
+.auth-header h2 {
+  margin: 0;
+  font-family: "Space Grotesk", 'Outfit', sans-serif;
+  font-size: 1.5rem;
+}
+.auth-header p {
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+.auth-form {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.auth-form label {
+  font-size: 0.82rem;
+  color: #d9d0e4;
+}
+.auth-form input,
+.auth-form select {
+  border: 1px solid #b6e2d3;
+  background: #f6fbfa;
+  color: #222;
+  border-radius: 12px;
+  padding: 12px;
+  font: inherit;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+ .auth-form input:focus,
+ .auth-form select:focus {
+  border-color: #7ec8e3;
+  box-shadow: 0 0 0 3px rgba(126, 200, 227, 0.18);
+}
+.auth-form select option {
+  color: #111;
+}
+.auth-form button {
+  margin-top: 8px;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px;
+  font-family: "Space Grotesk", 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #222;
+  background: linear-gradient(120deg, #7ec8e3, #b6e2d3);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.auth-form button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(126, 200, 227, 0.25);
+}
+.auth-form button:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+.status {
+  margin: 2px 0;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+.status.success {
+  color: var(--ok);
+  background: rgba(140, 249, 176, 0.12);
+  border: 1px solid rgba(140, 249, 176, 0.25);
+}
+.status.error {
+  color: var(--err);
+  background: rgba(255, 156, 185, 0.12);
+  border: 1px solid rgba(255, 156, 185, 0.25);
+}
+.auth-alt,
+.micro-note {
+  color: var(--text-muted);
+  font-size: 0.83rem;
+}
+.auth-alt {
+  margin-top: 14px;
+}
+.micro-note {
+  margin-top: 2px;
+  margin-bottom: 0;
+}
+/* --- End Roomora Scene Theme --- */
+/* --- Roomora Modern Auth Theme Additions --- */
+.auth-theme-bg {
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 30%, #6a5af9 0%, #4f46e5 40%, transparent 70%),
+              radial-gradient(circle at 80% 80%, #ff4fd8 0%, #ff4fd8 40%, transparent 70%),
+              linear-gradient(120deg, #2d1e60 0%, #ff4fd8 100%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  position: relative;
+}
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  z-index: 0;
+  pointer-events: none;
+}
+.orb-1 {
+  width: 350px;
+  height: 350px;
+  background: #6a5af9;
+  top: 0;
+  left: 0;
+}
+.orb-2 {
+  width: 400px;
+  height: 400px;
+  background: #ff4fd8;
+  bottom: 0;
+  right: 0;
+}
+.auth-center {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+.auth-card {
+  background: rgba(20, 10, 40, 0.92);
+  border-radius: 24px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.45);
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  max-width: 410px;
+  width: 100%;
+  color: #fff;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.auth-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.auth-brand {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 0.08em;
+}
+.auth-sub {
+  font-size: 1.02rem;
+  color: #e0e0e0;
+  margin-bottom: 1.2rem;
+}
+.auth-welcome {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: 0.01em;
+}
+.auth-desc {
+  color: #bdbdbd;
+  font-size: 1.08rem;
+  margin-bottom: 1.5rem;
+}
+.auth-form-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin-bottom: 1.2rem;
+}
+.auth-form-modern label {
+  font-size: 1.01rem;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 0.2rem;
+}
+.auth-form-modern input {
+  width: 100%;
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
+  border: 1px solid #b6e2d3;
+  background: #f6fbfa;
+  color: #222;
+  font-size: 1.08rem;
+  margin-top: 0.3rem;
+  margin-bottom: 0.1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.auth-form-modern input:focus {
+  border-color: #7ec8e3;
+}
+.btn-pink {
+  background: linear-gradient(90deg, #7ec8e3 0%, #b6e2d3 100%);
+  color: #222;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  padding: 0.95rem 0;
+  margin-top: 0.2rem;
+  margin-bottom: 0.2rem;
+  box-shadow: 0 4px 16px rgba(255,79,216,0.15);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.btn-pink:hover {
+  background: linear-gradient(90deg, #b6e2d3 0%, #7ec8e3 100%);
+  box-shadow: 0 6px 24px rgba(126,200,227,0.18);
+}
+.auth-links-row {
+  text-align: center;
+  margin-top: 0.7rem;
+  color: #e0e0e0;
+  font-size: 1.01rem;
+}
+.auth-links-row a {
+  color: #ff4fd8;
+  text-decoration: none;
+  font-weight: 600;
+}
+.auth-secure {
+  margin-top: 1.2rem;
+  color: #ff4fd8;
+  font-size: 0.98rem;
+  letter-spacing: 0.08em;
+  text-align: left;
+}
+/* --- End Roomora Modern Auth Theme Additions --- */
 
 :root {
   --bg: #0f172a;
   --surface: rgba(30, 41, 59, 0.7);
   --surface-solid: #1e293b;
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --green: #10b981;
-  --green-hover: #059669;
+  --text: #7b9ded;
+  --muted: #b0b8c9;
+  --text-heading: #f8fafc;
+  --primary: #38bdf8;
+  --primary-hover: #22d3ee;
+  --green: #22c55e;
+  --green-hover: #16a34a;
+  --danger: #ef4444;
   --hero-grad-a: #0f172a;
   --hero-grad-b: #1e1b4b;
   --border: rgba(255, 255, 255, 0.1);
@@ -1153,11 +1720,12 @@ body {
   border-color: var(--primary);
 }
 
-.chip-list,
-.chips {
+.chip-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.5em 0.7em;
+  margin-bottom: 0.5em;
+  margin-top: 1.1em;
 }
 
 .status-text {
@@ -2621,10 +3189,11 @@ select option {
   display: block;
 }
 
+/* Make chip text dark for visibility on light backgrounds */
 .chip {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text);
+  background: #2563eb;
+  border: 1px solid #1e40af;
+  color: #fff !important;
   padding: 0.3rem 0.7rem;
   border-radius: 20px;
   font-size: 0.8rem;

@@ -18,7 +18,12 @@ function renderFlats(flats) {
 
   flatGrid.innerHTML = flats
     .map(
-      (flat) => `
+      (flat) => {
+        const isShared = flat.maxOccupants && flat.maxOccupants > 1;
+        const current = flat.currentOccupants || 1;
+        const max = flat.maxOccupants || 1;
+        const vacancies = Math.max(0, max - current);
+        return `
       <article class="flat-card">
         <img src="${flat.images[0]}" alt="${flat.title}" class="flat-image" />
         <div class="flat-content">
@@ -26,10 +31,13 @@ function renderFlats(flats) {
           <p class="muted">${flat.location.address}</p>
           <p>${flat.description}</p>
           <p><strong>₹${flat.rent.toLocaleString("en-IN")}</strong> / month</p>
-          <p class="muted">${flat.flatType === "room-only" ? "Room Only" : "Room with Roommates"}</p>
+          <p class="muted">Room Type: <strong>${isShared ? "Shared" : "Single"}</strong></p>
+          <p>Current Occupants: <strong>${current}</strong></p>
+          <p>Vacancies: <strong>${vacancies}</strong></p>
         </div>
       </article>
-    `,
+      `;
+      }
     )
     .join("")
 

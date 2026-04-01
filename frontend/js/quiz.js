@@ -42,16 +42,21 @@ if (currentUser) {
     event.preventDefault()
 
     const formData = new FormData(quizForm)
-    const interestsRaw = String(formData.get("interests") || "")
+    // Budget (slider)
+    const budget = Number(formData.get("budget") || 15000)
+    // Room type (radio)
+    const roomType = formData.get("roomType") || "room-only"
+    // Amenities (checkboxes)
+    const amenities = []
+    quizForm.querySelectorAll('input[name="amenities"]:checked').forEach((el) => amenities.push(el.value))
+    // House rules (textarea)
+    const houseRules = formData.get("houseRules") || ""
 
     const payload = {
-      cleanliness: Number(formData.get("cleanliness") || 5),
-      socialLevel: Number(formData.get("socialLevel") || 5),
-      studyHabits: Number(formData.get("studyHabits") || 5),
-      interests: interestsRaw
-        .split(",")
-        .map((item) => item.trim().toLowerCase())
-        .filter(Boolean),
+      budget,
+      roomType,
+      amenities,
+      houseRules,
     }
 
     try {

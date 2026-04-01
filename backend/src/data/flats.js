@@ -12,6 +12,8 @@ const roommates = [
       socialLevel: 6,
       studyHabits: 9,
     },
+    address: "Kamla Nagar, Delhi University, New Delhi",
+    images: ["/assets/modern-apartment-living.png"],
   },
   {
     id: "rm2",
@@ -26,6 +28,8 @@ const roommates = [
       socialLevel: 8,
       studyHabits: 7,
     },
+    address: "Mukherjee Nagar, Delhi",
+    images: ["/assets/single-room.png"],
   },
   {
     id: "rm3",
@@ -40,6 +44,8 @@ const roommates = [
       socialLevel: 7,
       studyHabits: 8,
     },
+    address: "Lajpat Nagar, Delhi",
+    images: ["/assets/modern-apartment-living.png"],
   },
 ]
 

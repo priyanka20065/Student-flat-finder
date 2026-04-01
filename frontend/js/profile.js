@@ -2,7 +2,7 @@ const currentUser = window.AppUtils.ensureLoggedIn("/login")
 
 const profileForm = document.getElementById("profileForm")
 const profileStatus = document.getElementById("profileStatus")
-const studentPersonalityFields = document.getElementById("studentPersonalityFields")
+// const studentPersonalityFields = document.getElementById("studentPersonalityFields")
 const studentPreferenceFields = document.getElementById("studentPreferenceFields")
 const profileIntroText = document.getElementById("profileIntroText")
 const profileTabs = Array.from(document.querySelectorAll("[data-profile-tab]"))
@@ -30,7 +30,6 @@ function setInputValue(id, value) {
 }
 
 function applyRoleSpecificProfile() {
-  studentPersonalityFields?.classList.toggle("hidden", true)
   studentPreferenceFields?.classList.toggle("hidden", isOwner || activeProfileTab !== "personal")
 
   profileTabs.forEach((tab, index) => {
@@ -88,9 +87,7 @@ async function loadProfile() {
     setInputValue("profileCourse", profile.course)
     setInputValue("profileYear", profile.year)
     setInputValue("profileBio", profile.bio)
-    setInputValue("profileCleanliness", profile.personality?.cleanliness ?? 5)
-    setInputValue("profileSocialLevel", profile.personality?.socialLevel ?? 5)
-    setInputValue("profileStudyHabits", profile.personality?.studyHabits ?? 5)
+    // Removed personality fields from profile
 
   } catch (error) {
     profileStatus.textContent = error.message
@@ -119,16 +116,7 @@ profileForm?.addEventListener("submit", async (event) => {
     return
   }
 
-  const cleanlinessNode = document.getElementById("profileCleanliness")
-  const socialLevelNode = document.getElementById("profileSocialLevel")
-  const studyHabitsNode = document.getElementById("profileStudyHabits")
-  if (cleanlinessNode && socialLevelNode && studyHabitsNode) {
-    payload.personality = {
-      cleanliness: Number(cleanlinessNode.value || 5),
-      socialLevel: Number(socialLevelNode.value || 5),
-      studyHabits: Number(studyHabitsNode.value || 5),
-    }
-  }
+  // Removed personality fields from profile
 
   try {
     const updatedUser = await window.AppUtils.api(`/api/profile/${currentUser.id}`, {

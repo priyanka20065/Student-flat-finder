@@ -1,65 +1,49 @@
-const ownerTab = document.getElementById("ownerTab")
-const roommateTab = document.getElementById("roommateTab")
-const ownerForm = document.getElementById("ownerForm")
-const roommateForm = document.getElementById("roommateForm")
-const listStatus = document.getElementById("listStatus")
-const selectLocationBtn = document.getElementById("selectLocationBtn")
-const ownerAddressInput = document.getElementById("ownerAddressInput")
-const ownerSubmitBtn = document.getElementById("ownerSubmitBtn")
-const ownerListingsPanel = document.getElementById("ownerListingsPanel")
-const ownerListingsList = document.getElementById("ownerListingsList")
-const listHeroTitle = document.querySelector(".list-hero h1")
-const listHeroSubtitle = document.querySelector(".list-hero p")
-const ownerImagesInput = document.getElementById("ownerImagesInput")
-const ownerTourInput = document.getElementById("ownerTourInput")
-const ownerImagesCount = document.getElementById("ownerImagesCount")
-const ownerTourCount = document.getElementById("ownerTourCount")
-const ownerExistingImages = document.getElementById("ownerExistingImages")
-const ownerExistingTours = document.getElementById("ownerExistingTours")
-const roommateSubmitBtn = document.getElementById("roommateSubmitBtn")
-const roommateImagesInput = document.getElementById("roommateImagesInput")
-const roommateTourInput = document.getElementById("roommateTourInput")
-const roommateImagesCount = document.getElementById("roommateImagesCount")
-const roommateTourCount = document.getElementById("roommateTourCount")
-const roommateExistingImages = document.getElementById("roommateExistingImages")
-const roommateExistingTours = document.getElementById("roommateExistingTours")
-const roommateAddressInput = document.getElementById("roommateAddressInput")
-const selectRoommateLocationBtn = document.getElementById("selectRoommateLocationBtn")
-
-const currentUser = window.AppUtils.getCurrentUser()
-let editingFlatId = ""
-let editingImages = []
-let editingTourUrls = []
-let ownerSelectedImageFiles = []
-let ownerSelectedTourFiles = []
-let roommateSelectedImageFiles = []
-let roommateSelectedTourFiles = []
-let editingRoommateId = ""
-let editingRoommateImages = []
-let editingRoommateTourUrl = null
-let editingRoommateTourUrls = []
-
-function todayDateISO() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function renderEditableMediaChips(container, items, removeType) {
-  if (!container) {
-    return
-  }
-
-  if (!Array.isArray(items) || !items.length) {
-    container.innerHTML = ""
-    return
-  }
-
-  container.innerHTML = items
-    .map(
-      (url, index) =>
-        `<button class="btn btn-light small-btn" type="button" data-remove-type="${removeType}" data-remove-index="${index}">Remove ${index + 1}</button>`,
-    )
-    .join("")
-}
+// Roommate image/tour file inputs and counters (may not exist if roommate form is removed)
+const roommateImagesInput = null;
+const roommateTourInput = null;
+const roommateImagesCount = null;
+const roommateTourCount = null;
+// Owner image/tour file inputs and counters (may not exist if only using links)
+const ownerImagesInput = document.getElementById('ownerImagesInput');
+const ownerTourInput = document.getElementById('ownerTourInput');
+const ownerImagesCount = document.getElementById('ownerImagesCount');
+const ownerTourCount = document.getElementById('ownerTourCount');
+// No-op switchTab to prevent ReferenceError (tabs not used)
+function switchTab(_tab) {}
+// These elements do not exist, so define as null to prevent ReferenceError
+const listHeroTitle = null;
+const listHeroSubtitle = null;
+// Get current user from AppUtils (localStorage)
+const currentUser = window.AppUtils?.getCurrentUser ? window.AppUtils.getCurrentUser() : null;
+// Roommate form (may not exist if roommate listing is removed)
+const roommateForm = document.getElementById('roommateForm');
+// Roommate location button and address input (may not exist if roommate form is removed)
+const selectRoommateLocationBtn = document.getElementById('selectRoommateLocationBtn');
+const roommateAddressInput = document.getElementById('roommateAddressInput');
+// Tab elements for switching between owner and roommate listing (if present)
+const ownerTab = document.getElementById('ownerTab');
+const roommateTab = document.getElementById('roommateTab');
+// Student flat listing panel logic
+const studentListingsPanel = document.getElementById("studentListingsPanel");
+const studentListingsList = document.getElementById("studentListingsList");
+// ...existing code...
+// Prevent ReferenceErrors for editable media arrays
+let ownerExistingImages = [];
+let ownerExistingTours = [];
+let editingImages = [];
+let editingTourUrls = [];
+// Prevent ReferenceErrors for roommate-related variables (even if not used)
+let roommateExistingImages = [];
+let roommateExistingTours = [];
+let editingRoommateImages = [];
+let editingRoommateTourUrls = [];
+let roommateSelectedImageFiles = [];
+let roommateSelectedTourFiles = [];
+let editingRoommateId = "";
+// Prevent ReferenceError for editingFlatId
+let editingFlatId = "";
+// Stub for missing function to prevent ReferenceError
+function renderEditableMediaChips() {}
 
 function renderOwnerEditableMedia() {
   renderEditableMediaChips(ownerExistingImages, editingImages, "owner-image")
@@ -150,46 +134,46 @@ function bindRoommateFileInputs() {
 }
 
 function resolveListingMode() {
-  const role = String(currentUser?.role || "").toLowerCase()
-  const intent = String(currentUser?.intent || "").toLowerCase()
-  const preferredRoomType = String(currentUser?.preferredRoomType || "").toLowerCase()
-
+  const role = String(currentUser?.role || "").toLowerCase();
+  const intent = String(currentUser?.intent || "").toLowerCase();
+  const preferredRoomType = String(currentUser?.preferredRoomType || "").toLowerCase();
+  
   if (role === "owner" || intent === "owner") {
-    return "owner"
+    return "owner";
   }
-
+  
   if (role === "student" || (intent === "seeker" && preferredRoomType === "room-only")) {
-    return "student"
+    return "student";
   }
-
+  
   if (role === "roommate" || preferredRoomType === "room-with-roommates") {
-    return "roommate"
+    return "roommate";
   }
-
-  return "student"
+  
+  return "student";
 }
 
 function lockTabsForMode(mode) {
   if (mode === "owner") {
-    ownerTab.classList.remove("hidden")
-    roommateTab.classList.add("hidden")
-    ownerForm.classList.remove("hidden")
-    roommateForm.classList.add("hidden")
-    listHeroTitle.textContent = "List Your Property"
-    listHeroSubtitle.textContent = "Owner listing form"
-    return
+    if (ownerTab) ownerTab.classList.remove("hidden");
+    if (roommateTab) roommateTab.classList.add("hidden");
+    if (ownerForm) ownerForm.classList.remove("hidden");
+    if (roommateForm) roommateForm.classList.add("hidden");
+    if (listHeroTitle) listHeroTitle.textContent = "List Your Property";
+    if (listHeroSubtitle) listHeroSubtitle.textContent = "Owner listing form";
+    return;
   }
-
+  
   if (mode === "roommate") {
-    ownerTab.classList.add("hidden")
-    roommateTab.classList.remove("hidden")
-    ownerForm.classList.add("hidden")
-    roommateForm.classList.remove("hidden")
-    ownerListingsPanel?.classList.add("hidden")
-    listHeroTitle.textContent = "Create Roommate Profile"
-    listHeroSubtitle.textContent = "Roommate listing form"
-    prefillRoommateFormFromProfile()
-    loadMyRoommateListing()
+    if (ownerTab) ownerTab.classList.add("hidden");
+    if (roommateTab) roommateTab.classList.remove("hidden");
+    if (ownerForm) ownerForm.classList.add("hidden");
+    if (roommateForm) roommateForm.classList.remove("hidden");
+    if (ownerListingsPanel) ownerListingsPanel.classList.add("hidden");
+    if (listHeroTitle) listHeroTitle.textContent = "Create Roommate Profile";
+    if (listHeroSubtitle) listHeroSubtitle.textContent = "Roommate listing form";
+    prefillRoommateFormFromProfile();
+    loadMyRoommateListing();
   }
 }
 
@@ -309,61 +293,46 @@ async function prefillRoommateFormFromProfile() {
   }
 }
 
-function switchTab(type) {
-  ownerTab.classList.toggle("active-tab", type === "owner")
-  roommateTab.classList.toggle("active-tab", type === "roommate")
-  ownerForm.classList.toggle("hidden", type !== "owner")
-  roommateForm.classList.toggle("hidden", type !== "roommate")
-  listStatus.textContent = ""
-}
+// switchTab: roommate logic removed
 
 function applyUserFlow() {
   if (!currentUser?.id) {
-    window.location.href = "/login"
-    return
+    window.location.href = "/login";
+    return;
   }
-
-  const listingMode = resolveListingMode()
-
-  if (listingMode === "student") {
-    listStatus.textContent = "Students cannot create listings. Redirecting to browse..."
-    ownerForm.classList.add("hidden")
-    roommateForm.classList.add("hidden")
-    ownerTab.classList.add("hidden")
-    roommateTab.classList.add("hidden")
-    ownerListingsPanel?.classList.add("hidden")
-    setTimeout(() => {
-      window.location.href = "/browse"
-    }, 400)
-    return
+  
+  const listingMode = resolveListingMode();
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get("mode");
+  
+  // Always try to load student flat listing if user is a student or roommate
+  if (listingMode === "student" || listingMode === "roommate") {
+    loadStudentFlatListing();
   }
-
-  const params = new URLSearchParams(window.location.search)
-  const mode = params.get("mode")
-
+  
   if (mode === "owner" && listingMode === "owner") {
-    lockTabsForMode("owner")
-    switchTab("owner")
-    loadOwnerListings()
-    return
+    lockTabsForMode("owner");
+    switchTab("owner");
+    loadOwnerListings();
+    return;
   }
-
+  
   if (mode === "roommate" && listingMode === "roommate") {
-    lockTabsForMode("roommate")
-    switchTab("roommate")
-    return
+    lockTabsForMode("roommate");
+    switchTab("roommate");
+    return;
   }
-
+  
   if (listingMode === "owner") {
-    lockTabsForMode("owner")
-    switchTab("owner")
-    loadOwnerListings()
-    return
+    lockTabsForMode("owner");
+    switchTab("owner");
+    loadOwnerListings();
+    return;
   }
-
+  
   if (listingMode === "roommate") {
-    lockTabsForMode("roommate")
-    switchTab("roommate")
+    lockTabsForMode("roommate");
+    switchTab("roommate");
   }
 }
 
@@ -384,19 +353,34 @@ async function loadOwnerListings() {
 
     ownerListingsList.innerHTML = listings
       .map(
-        (flat) => `
+        (flat) => {
+          // Debug log to inspect flat object
+          console.log('[DEBUG] Rendering owner listing card:', flat);
+          const isShared = flat.maxOccupants && flat.maxOccupants > 1;
+          // Only count students (roommates), never owner
+          const current = Array.isArray(flat.roommates) ? flat.roommates.length : 0;
+          const max = flat.maxOccupants || 1;
+          const vacancies = Math.max(0, max - current);
+          // Add a direct URL to view the flat listing
+          const flatUrl = `/browse?flatId=${encodeURIComponent(flat.id)}`;
+          return `
           <article class="conversation-card" data-flat-id="${flat.id}">
             <div class="conversation-content">
               <h3>${flat.title}</h3>
               <p class="muted">${flat.location.address}</p>
               <p><strong>${window.AppUtils.formatINR(flat.rent)}</strong> / month</p>
+              <p>Room Type: <strong>${isShared ? "Shared" : "Single"}</strong></p>
+              ${isShared ? `<p>Current Occupants: <strong>${current}</strong></p>` : ""}
+              ${isShared ? `<p>Vacancies: <strong>${vacancies}</strong></p>` : ""}
+              <p><a href="${flatUrl}" class="btn btn-link" target="_blank">View Your Listing</a></p>
             </div>
             <div class="chip-list">
               <button class="btn btn-light small-btn" type="button" data-edit-flat="${flat.id}">Update</button>
               <button class="btn btn-dark small-btn" type="button" data-delete-flat="${flat.id}">Delete</button>
             </div>
           </article>
-        `,
+          `;
+        }
       )
       .join("")
 
@@ -405,6 +389,12 @@ async function loadOwnerListings() {
         const flat = listings.find((item) => item.id === button.dataset.editFlat)
         if (!flat) {
           return
+        }
+
+        // Set owner name field so it is not lost on update (now in correct scope)
+        const ownerNameInput = ownerForm.querySelector('input[name="ownerName"]')
+        if (ownerNameInput) {
+          ownerNameInput.value = flat.ownerName || currentUser?.name || "Owner"
         }
 
         editingFlatId = flat.id
@@ -419,9 +409,22 @@ async function loadOwnerListings() {
         ownerForm.querySelector('textarea[name="description"]').value = flat.description || ""
         ownerForm.querySelector('input[name="address"]').value = flat.location?.address || ""
         ownerForm.querySelector('input[name="rent"]').value = flat.rent || ""
-        const flatTypeInput = ownerForm.querySelector('input[name="flatType"]')
-        if (flatTypeInput) {
-          flatTypeInput.value = "room-only"
+        // Set the correct radio button for flatType
+        const flatTypeValue = flat.flatType || "room-only";
+        // Map backend value to frontend value for radio selection
+        let frontendFlatType = flatTypeValue;
+        if (flatTypeValue === 'room-with-roommates') frontendFlatType = 'shared-room';
+        ownerForm.querySelectorAll('input[name="flatType"]').forEach(radio => {
+          radio.checked = radio.value === frontendFlatType;
+        });
+        // Show/hide shared room fields and set maxOccupants if shared
+        const sharedRoomFields = document.getElementById('sharedRoomFields');
+        if (flatTypeValue === 'shared-room') {
+          if (sharedRoomFields) sharedRoomFields.style.display = '';
+          const maxOccInput = sharedRoomFields?.querySelector('input[name="maxOccupants"]');
+          if (maxOccInput) maxOccInput.value = flat.maxOccupants || 2;
+        } else {
+          if (sharedRoomFields) sharedRoomFields.style.display = 'none';
         }
         ownerForm.querySelector('input[name="availableFrom"]').value = flat.availableFrom || ""
 
@@ -432,6 +435,21 @@ async function loadOwnerListings() {
         ownerForm.querySelectorAll('input[name="amenities"]').forEach((checkbox) => {
           checkbox.checked = (flat.amenities || []).includes(checkbox.value)
         })
+
+        // Populate image and tour URL fields with current values
+        const ownerImagesLinks = document.getElementById("ownerImagesLinks")
+        if (ownerImagesLinks) {
+          ownerImagesLinks.value = (Array.isArray(flat.images) ? flat.images : []).join(", ")
+        }
+        const ownerTourLinks = document.getElementById("ownerTourLinks")
+        if (ownerTourLinks) {
+          ownerTourLinks.value = (Array.isArray(flat.virtualTourUrls)
+            ? flat.virtualTourUrls
+            : flat.virtualTourUrl
+              ? [flat.virtualTourUrl]
+              : []
+          ).join(", ")
+        }
 
         if (ownerSubmitBtn) {
           ownerSubmitBtn.textContent = "Update Property"
@@ -490,8 +508,8 @@ async function loadOwnerListings() {
   }
 }
 
-ownerTab.addEventListener("click", () => switchTab("owner"))
-roommateTab.addEventListener("click", () => switchTab("roommate"))
+if (ownerTab) ownerTab.addEventListener("click", () => switchTab("owner"))
+if (roommateTab) roommateTab.addEventListener("click", () => switchTab("roommate"))
 
 document.addEventListener("click", (event) => {
   const target = event.target
@@ -588,19 +606,37 @@ selectRoommateLocationBtn?.addEventListener("click", () => {
 })
 
 ownerForm.addEventListener("submit", async (event) => {
+  console.log("[DEBUG] OWNER FORM SUBMIT HANDLER TRIGGERED");
   event.preventDefault()
   const formData = new FormData(ownerForm)
-  const ownerImageInputForSubmit = ownerForm.querySelector('input[name="images"]')
-  const ownerTourInputForSubmit = ownerForm.querySelector('input[name="tour360"]')
-  const imageFiles = ownerSelectedImageFiles.length
-    ? ownerSelectedImageFiles
-    : Array.from(ownerImageInputForSubmit?.files || [])
-  const tourFiles = ownerSelectedTourFiles.length
-    ? ownerSelectedTourFiles
-    : Array.from(ownerTourInputForSubmit?.files || [])
   const selectedAmenities = Array.from(ownerForm.querySelectorAll('input[name="amenities"]:checked')).map(
     (checkbox) => checkbox.value,
   )
+
+  // Get selected flatType
+  const flatType = formData.get("flatType") || "room-only";
+  // Map frontend value to backend value
+  let backendFlatType = flatType;
+  if (flatType === "shared-room") backendFlatType = "room-with-roommates";
+  // Log for debugging mapping
+  console.log("[OWNER LISTING] Selected flatType:", flatType, "| Backend flatType:", backendFlatType);
+  // Get maxOccupants if shared-room, else default to 1
+  let maxOccupants = 1;
+  if (flatType === "shared-room") {
+    maxOccupants = Number(formData.get("maxOccupants")) || 2;
+  }
+
+  // Parse image links robustly
+  const images = (ownerImagesLinks.value || "")
+    .split(",")
+    .map((url) => url.trim())
+    .filter((url) => url.length > 0)
+  // Debug output
+  console.log("[DEBUG] OWNER FORM SUBMIT. Parsed images array:", images)
+  const virtualTourUrls = (ownerTourLinks.value || "")
+    .split(",")
+    .map((url) => url.trim())
+    .filter((url) => url.length > 0)
 
   const payload = {
     ownerId: String(currentUser?.id || "").trim() || undefined,
@@ -612,35 +648,22 @@ ownerForm.addEventListener("submit", async (event) => {
     lat: parseOptionalNumber(formData.get("lat")),
     lng: parseOptionalNumber(formData.get("lng")),
     rent: Number(formData.get("rent") || 0),
-    flatType: "room-only",
+    flatType: backendFlatType,
+    maxOccupants,
     availableFrom: String(formData.get("availableFrom") || ""),
     amenities: selectedAmenities,
-    images: [],
-    virtualTourUrls: [],
-    virtualTourUrl: null,
+    images,
+    virtualTourUrls,
+    virtualTourUrl: virtualTourUrls[0] || null,
   }
 
   try {
-    let upload = null
-    if (imageFiles.length || tourFiles.length) {
-      upload = await uploadImages(imageFiles, tourFiles)
-    }
-
-    payload.images = imageFiles.length ? upload?.images || [] : editingFlatId ? editingImages : []
-    payload.virtualTourUrls = tourFiles.length
-      ? upload?.tour360Urls || []
-      : editingFlatId
-        ? editingTourUrls
-        : []
-    payload.virtualTourUrl = payload.virtualTourUrls[0] || null
-
     if (payload.images.length < 2) {
-      listStatus.textContent = "Please keep at least 2 normal property photos."
+      listStatus.textContent = "Please provide at least 2 flat photo links (comma separated)."
       return
     }
-
     if (payload.virtualTourUrls.length < 2) {
-      listStatus.textContent = "Please keep at least 2 panoramic 360 photos."
+      listStatus.textContent = "Please provide at least 2 panoramic 360 photo links (comma separated)."
       return
     }
 
@@ -650,141 +673,71 @@ ownerForm.addEventListener("submit", async (event) => {
         body: JSON.stringify(payload),
       })
       listStatus.textContent = "Listing updated successfully."
-      editingFlatId = ""
-      editingImages = []
-      editingTourUrls = []
-      if (ownerSubmitBtn) {
-        ownerSubmitBtn.textContent = "List Property"
-      }
-      renderOwnerEditableMedia()
+      // Do NOT reset form or clear editing state after update
+      // Optionally, reload listings to reflect changes
+      loadOwnerListings()
     } else {
       await window.AppUtils.api("/api/list/owner", {
         method: "POST",
         body: JSON.stringify(payload),
       })
       listStatus.textContent = "Owner listing submitted. It is now visible in Browse → Rooms."
-    }
-
-    ownerForm.reset()
-    ownerSelectedImageFiles = []
-    ownerSelectedTourFiles = []
-    if (!editingFlatId) {
+      ownerForm.reset()
+      editingFlatId = ""
       editingImages = []
       editingTourUrls = []
+      if (ownerSubmitBtn) {
+        ownerSubmitBtn.textContent = "List Property"
+      }
+      switchTab("owner")
+      loadOwnerListings()
     }
-    updateOwnerFileCounters()
-    renderOwnerEditableMedia()
-    switchTab("owner")
-    loadOwnerListings()
   } catch (error) {
     listStatus.textContent = error.message
   }
 })
 
-roommateForm.addEventListener("submit", async (event) => {
-  event.preventDefault()
-  const formData = new FormData(roommateForm)
-  const roommateImageInputForSubmit = roommateForm.querySelector('input[name="images"]')
-  const roommateTourInputForSubmit = roommateForm.querySelector('input[name="tour360"]')
-  const imageFiles = roommateSelectedImageFiles.length
-    ? roommateSelectedImageFiles
-    : Array.from(roommateImageInputForSubmit?.files || [])
-  const tourFiles = roommateSelectedTourFiles.length
-    ? roommateSelectedTourFiles
-    : Array.from(roommateTourInputForSubmit?.files || [])
-  const interests = Array.from(roommateForm.querySelectorAll('input[name="interest"]:checked')).map(
-    (checkbox) => checkbox.value,
-  )
 
-  const payload = {
-    userId: String(currentUser?.id || "").trim() || undefined,
-    name: String(formData.get("name") || "").trim(),
-    age: Number(formData.get("age") || 20),
-    course: String(formData.get("course") || "").trim(),
-    bio: String(formData.get("bio") || "").trim(),
-    preferredRentMax: Number(formData.get("preferredRentMax") || 0),
-    maxOccupants: Number(formData.get("maxOccupants") || 1),
-    address: String(formData.get("address") || "").trim(),
-    lat: parseOptionalNumber(formData.get("lat")),
-    lng: parseOptionalNumber(formData.get("lng")),
-    interests: interests.join(", "),
-    cleanliness: Number(formData.get("cleanliness") || 5),
-    socialLevel: Number(formData.get("socialLevel") || 5),
-    studyHabits: Number(formData.get("studyHabits") || 5),
-    images: [],
-    virtualTourUrls: [],
-    virtualTourUrl: null,
-  }
 
-  try {
-    if (!payload.address) {
-      listStatus.textContent = "Please add roommate listing address so it can be visible on map."
-      return
-    }
-
-    let upload = null
-    if (imageFiles.length || tourFiles.length) {
-      upload = await uploadImages(imageFiles, tourFiles)
-    }
-
-    payload.images = imageFiles.length ? upload?.images || [] : editingRoommateId ? editingRoommateImages : []
-    payload.virtualTourUrls = tourFiles.length
-      ? upload?.tour360Urls || []
-      : editingRoommateId
-        ? editingRoommateTourUrls
-        : []
-    payload.virtualTourUrl = tourFiles.length
-      ? upload?.tour360Url || null
-      : editingRoommateId
-        ? editingRoommateTourUrl
-        : null
-
-    if (payload.images.length < 2) {
-      listStatus.textContent = "Please upload at least 2 profile photos."
-      return
-    }
-
-    if (!payload.virtualTourUrl || payload.virtualTourUrls.length < 2) {
-      listStatus.textContent = "Please upload at least 2 panoramic 360 photos."
-      return
-    }
-
-    if (editingRoommateId) {
-      await window.AppUtils.api(`/api/list/roommate/${editingRoommateId}`, {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      })
-      listStatus.textContent = "Roommate profile updated successfully."
-    } else {
-      await window.AppUtils.api("/api/list/roommate", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      })
-      listStatus.textContent = "Roommate profile submitted. It is now visible in Browse → Roommates."
-    }
-
-    roommateForm.reset()
-    roommateSelectedImageFiles = []
-    roommateSelectedTourFiles = []
-    updateRoommateFileCounters()
-    editingRoommateId = ""
-    editingRoommateImages = []
-    editingRoommateTourUrl = null
-    editingRoommateTourUrls = []
-    if (roommateSubmitBtn) {
-      roommateSubmitBtn.textContent = "Create Profile"
-    }
-    renderRoommateEditableMedia()
-    prefillRoommateFormFromProfile()
-    loadMyRoommateListing()
-    switchTab("roommate")
-  } catch (error) {
-    listStatus.textContent = error.message
-  }
-})
 
 applyUserFlow()
 bindOwnerFileInputs()
 bindRoommateFileInputs()
 renderOwnerEditableMedia()
 renderRoommateEditableMedia()
+
+applyUserFlow()
+bindOwnerFileInputs()
+bindRoommateFileInputs()
+renderOwnerEditableMedia()
+renderRoommateEditableMedia()
+
+// Robust: Show/hide shared room fields based on property type
+function setupSharedRoomFields() {
+  const flatTypeRadios = document.querySelectorAll('input[name="flatType"]');
+  const sharedRoomFields = document.getElementById('sharedRoomFields');
+  if (!flatTypeRadios.length || !sharedRoomFields) return;
+  function updateSharedRoomFields() {
+    const selected = Array.from(flatTypeRadios).find(r => r.checked)?.value;
+    sharedRoomFields.style.display = selected === 'shared-room' ? '' : 'none';
+    // Toggle required attribute for maxOccupants
+    const maxOccupantsInput = sharedRoomFields.querySelector('input[name="maxOccupants"]');
+    if (maxOccupantsInput) {
+      if (selected === 'shared-room') {
+        maxOccupantsInput.required = true;
+      } else {
+        maxOccupantsInput.required = false;
+        maxOccupantsInput.value = '';
+      }
+    }
+  }
+  flatTypeRadios.forEach(radio => {
+    radio.addEventListener('change', updateSharedRoomFields);
+  });
+  updateSharedRoomFields();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupSharedRoomFields);
+} else {
+  setupSharedRoomFields();
+}

@@ -1,3 +1,12 @@
+// Helper to resolve image URLs for backend-served uploads
+function resolveImageUrl(url) {
+  if (!url) return "/assets/modern-apartment-living.png";
+  if (url.startsWith("/uploads/")) {
+    return "http://localhost:4001" + url;
+  }
+  return url;
+}
+
 const container = document.getElementById("roommateDetail")
 const roommateModalBackdrop = document.getElementById("roommateModalBackdrop")
 const roommateChatModal = document.getElementById("roommateChatModal")
@@ -310,9 +319,10 @@ function setupPanorama(tourUrls, activeSceneIndex = 0) {
   }
 
   const sceneIndex = Math.max(0, Math.min(activeSceneIndex, tourUrls.length - 1))
+  // Always resolve the panorama URL to use the backend server
   panoramaViewer = window.pannellum.viewer("panoramaViewer", {
     type: "equirectangular",
-    panorama: tourUrls[sceneIndex],
+    panorama: resolveImageUrl(tourUrls[sceneIndex]),
     autoLoad: true,
     showControls: true,
     autoRotate: -2,
@@ -601,6 +611,8 @@ function renderRoommateDetail(roommate) {
   const interests = Array.isArray(roommate.interests) ? roommate.interests : []
   const chips = interests.map((item) => `<span class="chip">${item}</span>`).join("")
   const images = Array.isArray(roommate.images) && roommate.images.length ? roommate.images : ["/assets/modern-apartment-living.png"]
+  // Debug log for troubleshooting image URLs
+  console.log("[Roommate Images]", images, "Raw images:", roommate.images);
   const tourUrls = Array.isArray(roommate.virtualTourUrls)
     ? roommate.virtualTourUrls
     : roommate.virtualTourUrl
@@ -609,20 +621,20 @@ function renderRoommateDetail(roommate) {
   const useImageTourViewer = tourUrls.length > 0 && isImageTourUrl(tourUrls[0])
   const maxOccupants = Math.max(1, Number(roommate.maxOccupants || 1))
   const isListingOwner = Boolean(currentUser?.id && String(currentUser.id) === String(roommate.createdByUserId || ""))
-  const currentRoommates = [{ name: roommate.name || "Listing Owner", role: "Listed by" }]
-
-  if (roommate.purchasedByName && String(roommate.purchasedByName).trim()) {
-    currentRoommates.push({ name: String(roommate.purchasedByName).trim(), role: "Joined" })
+  // Only count actual roommates, not the owner, for shared flats
+  let currentRoommates = [];
+  if (Array.isArray(roommate.currentRoommates)) {
+    currentRoommates = roommate.currentRoommates
+      .map((item) => String(item || "").trim())
+      .filter(Boolean)
+      .map((name) => ({ name, role: "Joined" }));
   }
-
-  const additionalRoommates = Array.isArray(roommate.currentRoommates)
-    ? roommate.currentRoommates
-        .map((item) => String(item || "").trim())
-        .filter(Boolean)
-        .map((name) => ({ name, role: "Joined" }))
-    : []
-  currentRoommates.push(...additionalRoommates)
-  const seatsLeft = Math.max(maxOccupants - currentRoommates.length, 0)
+  // If purchasedByName exists, add as joined
+  if (roommate.purchasedByName && String(roommate.purchasedByName).trim()) {
+    currentRoommates.unshift({ name: String(roommate.purchasedByName).trim(), role: "Joined" });
+  }
+  // For new listings with no roommates, currentRoommates will be empty
+  const seatsLeft = Math.max(maxOccupants - currentRoommates.length, 0);
   const isBoughtByCurrentUser = Boolean(
     currentUser?.id &&
       (String(roommate.purchasedByUserId || "") === String(currentUser.id || "") ||
@@ -649,7 +661,7 @@ function renderRoommateDetail(roommate) {
             .map(
               (imageUrl, index) => `
                 <button type="button" class="flat-thumb-item ${index === 0 ? "active-thumb" : ""}" data-index="${index}" aria-label="Open image ${index + 1}">
-                  <img src="${imageUrl}" alt="${roommate.name || "Roommate"} thumbnail ${index + 1}" class="flat-thumb-image" />
+                  <img src="${resolveImageUrl(imageUrl)}" alt="${roommate.name || 'Roommate'} thumbnail ${index + 1}" class="flat-thumb-image" onerror="this.onerror=null;this.src='/assets/modern-apartment-living.png';" />
                 </button>
               `,
             )
@@ -657,7 +669,7 @@ function renderRoommateDetail(roommate) {
         </div>
         <div class="flat-main-media">
           ${images.length > 1 ? '<button type="button" class="flat-gallery-nav flat-gallery-prev" id="roommatePrevImage" aria-label="Previous image">❮</button>' : ""}
-          <img id="roommateMainImage" src="${images[0]}" alt="${roommate.name || "Roommate"}" class="flat-hero-image" draggable="false" />
+          <img id="roommateMainImage" src="${resolveImageUrl(images[0])}" alt="${roommate.name || "Roommate"}" class="flat-hero-image" draggable="false" onerror="this.onerror=null;this.src='/assets/modern-apartment-living.png';" />
           ${images.length > 1 ? '<button type="button" class="flat-gallery-nav flat-gallery-next" id="roommateNextImage" aria-label="Next image">❯</button>' : ""}
           <div class="flat-open-hint">Click image to open • Use arrows to change</div>
         </div>
@@ -705,35 +717,26 @@ function renderRoommateDetail(roommate) {
       </article>
       <article class="card">
         <h3>Quick Info</h3>
-        <p><span class="muted">Photos:</span> <strong>${images.length}</strong></p>
-        <p><span class="muted">360° Scenes:</span> <strong>${tourUrls.length}</strong></p>
+        
         <p><span class="muted">Students Capacity:</span> <strong>${maxOccupants}</strong></p>
-        <p><span class="muted">Current Roommates:</span> <strong>${currentRoommates.length}/${maxOccupants}</strong></p>
-        <p><span class="muted">Seats Left:</span> <strong>${seatsLeft}</strong></p>
-        <p><span class="muted">Listing Type:</span> <strong>Student Roommate</strong></p>
+        <p><span class="muted">Listing Type:</span> <strong>Roommate Listing (Owner Only)</strong></p>
         <p><span class="muted">Actions:</span> ${
           isListingOwner
             ? '<a class="btn btn-primary small-btn" href="/list?mode=roommate">Update Listing</a>'
-            : '<strong>Contact listing student</strong>'
+            : '<strong>Contact listing owner</strong>'
         }</p>
       </article>
     </section>
 
     <section class="card">
-      <h3>Current Roommates (${currentRoommates.length}/${maxOccupants})</h3>
+      <h3>Listing Owner</h3>
       <div class="flat-roommate-list">
-        ${currentRoommates
-          .map(
-            (person) => `
-              <article class="flat-roommate-card no-avatar">
-                <div>
-                  <h4>${person.name}</h4>
-                  <p class="muted">${person.role}</p>
-                </div>
-              </article>
-            `,
-          )
-          .join("")}
+        <article class="flat-roommate-card no-avatar">
+          <div>
+            <h4>${roommate.name || "Listing Owner"}</h4>
+            <p class="muted">Listed by</p>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -748,7 +751,7 @@ function renderRoommateDetail(roommate) {
                    .map(
                      (tourUrl, index) => `
                        <button type="button" class="tour-scene-thumb ${index === 0 ? "active-scene" : ""}" data-scene-index="${index}" aria-label="Open 360 scene ${index + 1}">
-                         <img src="${tourUrl}" alt="${roommate.name || "Roommate"} 360 scene ${index + 1}" />
+                         <img src="${tourUrl}" alt="${roommate.name || "Roommate"} 360 scene ${index + 1}" onerror="this.onerror=null;this.src='/assets/modern-apartment-living.png';" />
                          <span>Scene ${index + 1}</span>
                        </button>
                      `,

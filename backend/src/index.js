@@ -1,52 +1,49 @@
+// Subscription plan durations (in days)
+const SUBSCRIPTION_DAYS = {
+  basic: 30,
+  standard: 90,
+  premium: 365,
+  monthly: 30,
+  quarterly: 90,
+  yearly: 365
+};
+// --- Define sendEmail for use in API routes ---
+const sendEmail = async ({ to, subject, text, html }) => {
+  if (!mailEnabled) return false;
+  const nodemailer = require("nodemailer");
+  try {
+    const transporter = nodemailer.createTransport({
+      host: smtpConfig.host,
+      port: smtpConfig.port,
+      secure: smtpConfig.secure,
+      auth: {
+        user: smtpConfig.user,
+        pass: smtpConfig.pass,
+      },
+    });
+    await transporter.sendMail({ from: smtpConfig.from, to, subject, text, html });
+    return true;
+  } catch (error) {
+    console.error("Email send failed:", error.message);
+    return false;
+  }
+};
 require("dotenv").config()
-
 const express = require("express")
-const fs = require("fs")
-const path = require("path")
-const crypto = require("crypto")
+const cors = require("cors")
 const { MongoClient } = require("mongodb")
-const multer = require("multer")
-const nodemailer = require("nodemailer")
-const Razorpay = require("razorpay")
+const { uploadsDir } = require("./config/paths")
+const smtpConfig = require("./config/smtp")
+const { razorpayEnabled, razorpay } = require("./config/razorpay")
+const { imageUpload } = require("./utils/dependencies")
 const { flats: seedFlats, roommates: seedRoommates } = require("./data/flats")
 
 const app = express()
+app.use(cors())
 const PORT = process.env.PORT || 4000
 
-const uploadsDir = path.join(__dirname, "..", "uploads")
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true })
-}
-
-const imageUpload = multer({
-  storage: multer.diskStorage({
-    destination: (_req, _file, callback) => {
-      callback(null, uploadsDir)
-    },
-    filename: (_req, file, callback) => {
-      const extension = path.extname(file.originalname || "").toLowerCase() || ".jpg"
-      const safeName = path
-        .basename(file.originalname || "image", extension)
-        .toLowerCase()
-        .replace(/[^a-z0-9-_]/g, "-")
-        .slice(0, 32)
-      callback(null, `${safeName || "image"}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${extension}`)
-    },
-  }),
-  fileFilter: (_req, file, callback) => {
-    if (String(file.mimetype || "").startsWith("image/")) {
-      callback(null, true)
-      return
-    }
-
-    callback(new Error("Only image files are allowed"))
-  },
-  limits: {
-    fileSize: 25 * 1024 * 1024,
-  },
-})
-
 app.use(express.json())
+
 const staticNoCacheOptions = {
   etag: false,
   lastModified: false,
@@ -55,11 +52,16 @@ const staticNoCacheOptions = {
     res.setHeader("Pragma", "no-cache")
     res.setHeader("Expires", "0")
     res.setHeader("Surrogate-Control", "no-store")
+    res.setHeader("Access-Control-Allow-Origin", "*");
   },
 }
+// Add CORS headers for /uploads static files
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  next();
+}, express.static(uploadsDir, staticNoCacheOptions));
 
-app.use("/uploads", express.static(uploadsDir, staticNoCacheOptions))
-
+// State and config
 const state = {
   flats: [...seedFlats],
   roommates: [...seedRoommates],
@@ -67,11 +69,9 @@ const state = {
   chats: {},
   flatMetrics: {},
 }
-
 const mongoUri = String(process.env.MONGODB_URI || "").trim()
 const mongoAutoSeed = String(process.env.MONGO_AUTO_SEED || "false") === "true"
 let mongoEnabled = false
-
 const dbCollections = {
   flats: null,
   roommates: null,
@@ -79,47 +79,103 @@ const dbCollections = {
   chats: null,
   flatMetrics: null,
 }
-
 const FREE_CHAT_LIMIT = 5
-const SUBSCRIPTION_DAYS = {
-  premium: 30,
-  "premium yearly": 365,
-}
-
 const browseSubscribers = new Set()
 const chatSubscribers = {}
-
-const smtpConfig = {
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: String(process.env.SMTP_SECURE || "false") === "true",
-  user: process.env.SMTP_USER,
-  pass: String(process.env.SMTP_PASS || "").replace(/\s+/g, ""),
-  from: process.env.SMTP_FROM || process.env.SMTP_USER || "no-reply@studentflatfinder.local",
-}
-
 const mailEnabled = Boolean(smtpConfig.host && smtpConfig.user && smtpConfig.pass)
 
-const mailTransporter = mailEnabled
-  ? nodemailer.createTransport({
-    host: smtpConfig.host,
-    port: smtpConfig.port,
-    secure: smtpConfig.secure,
-    auth: {
-      user: smtpConfig.user,
-      pass: smtpConfig.pass,
-    },
-  })
-  : null
+// Utility imports
+const userUtils = require("./utils/userUtils")
+const geoUtils = require("./utils/geoUtils")
+const mongoUtils = require("./utils/mongoUtils")
+const metricsUtils = require("./utils/metricsUtils")
+const distanceUtils = require("./utils/distanceUtils")
+const eventUtils = require("./utils/eventUtils")
+const profileUtils = require("./utils/profileUtils")
+const errorHandler = require("./utils/errorHandler")
 
-const razorpayEnabled = Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET)
+// Route setup
 
-const razorpay = razorpayEnabled
-  ? new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-  })
-  : null
+require("./controllers/api")(app, {
+  state,
+  dbCollections,
+  FREE_CHAT_LIMIT,
+  mongoUri,
+  mongoEnabled,
+  imageUpload,
+  razorpayEnabled,
+  razorpay,
+  mailEnabled,
+  sendEmail: async ({ to, subject, text, html }) => {
+    if (!mailEnabled) return false
+    const nodemailer = require("nodemailer")
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpConfig.host,
+        port: smtpConfig.port,
+        secure: smtpConfig.secure,
+        auth: {
+          user: smtpConfig.user,
+          pass: smtpConfig.pass,
+        },
+      })
+      await transporter.sendMail({ from: smtpConfig.from, to, subject, text, html })
+      return true
+    } catch (error) {
+      console.error("Email send failed:", error.message)
+      return false
+    }
+  },
+  crypto: require("crypto"),
+  CAMPUS: { lat: 28.6692, lng: 77.2065 },
+  ...userUtils,
+  ...geoUtils,
+  ...mongoUtils,
+  ...metricsUtils,
+  ...distanceUtils,
+  ...eventUtils,
+  ...profileUtils,
+  // Persistence functions
+  persistUser,
+  persistFlat,
+  deleteFlat,
+  deleteChat,
+  persistRoommate,
+  persistChatMessages,
+  persistFlatMetrics,
+  deleteFlatMetrics,
+  browseSubscribers,
+  chatSubscribers
+})
+
+// Error handler
+app.use(errorHandler)
+
+// Server bootstrap
+function startServer(portArg, maxRetries = 5) {
+  const currentPort = Number(portArg)
+  const server = app
+    .listen(currentPort, () => {
+      console.log(`Express server running at http://localhost:${currentPort}`)
+    })
+    .on("error", (error) => {
+      if (error.code === "EADDRINUSE" && maxRetries > 0) {
+        const nextPort = currentPort + 1
+        console.warn(`Port ${currentPort} is in use. Trying ${nextPort}...`)
+        startServer(nextPort, maxRetries - 1)
+        return
+      }
+      throw error
+    })
+  return server
+}
+
+async function bootstrap() {
+  // pruneUnsupportedListingsFromState and DB init can be added here if needed
+  startServer(PORT)
+}
+
+bootstrap()
 
 function sanitizeUser(user) {
   if (!user) {
@@ -281,6 +337,7 @@ function normalizeFlat(flat) {
   const virtualTourUrls = normalizeTourUrls(flat.virtualTourUrls || flat.virtualTourUrl)
   return {
     ...flat,
+    maxOccupants: Math.max(1, toNumber(flat.maxOccupants, 1)),
     images: images.length ? images : ["/assets/modern-apartment-living.png"],
     roommates: Array.isArray(flat.roommates) ? flat.roommates : [],
     virtualTourUrls,
@@ -736,23 +793,22 @@ function isActiveOwnerListing(flat) {
 }
 
 function isActiveRoommateListing(roommate) {
+  // Always show seed roommates (no createdByUserId)
+  if (!roommate?.createdByUserId) {
+    return Boolean(roommate.name);
+  }
+
   if (!isAppGeneratedListingId(roommate?.id, "rm")) {
-    return false
+    return false;
   }
 
-  const createdByUserId = String(roommate?.createdByUserId || "").trim()
-  // Seed roommates don't have a createdByUserId
-  if (!createdByUserId) {
-    return Boolean(roommate.name)
-  }
-
-  const user = state.users.get(createdByUserId)
+  const createdByUserId = String(roommate?.createdByUserId || "").trim();
+  const user = state.users.get(createdByUserId);
   if (!user) {
-    return false
+    return false;
   }
-
-  const normalizedRole = String(user.role || user.intent || "").toLowerCase()
-  return normalizedRole !== "owner"
+  const normalizedRole = String(user.role || user.intent || "").toLowerCase();
+  return normalizedRole !== "owner";
 }
 
 function pruneUnsupportedListingsFromState() {
@@ -849,25 +905,7 @@ function broadcastChatUpdate(flatId, message) {
   }
 }
 
-async function sendEmail({ to, subject, text, html }) {
-  if (!mailTransporter || !to) {
-    return false
-  }
 
-  try {
-    await mailTransporter.sendMail({
-      from: smtpConfig.from,
-      to,
-      subject,
-      text,
-      html,
-    })
-    return true
-  } catch (error) {
-    console.error("Email send failed:", error.message)
-    return false
-  }
-}
 
 require('./routes/api')(app, {
   state,

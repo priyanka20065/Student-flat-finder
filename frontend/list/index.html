@@ -7,27 +7,25 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header class="nav">
-      <a href="/" class="brand">Student Flat Finder</a>
-      <nav>
-        <a data-nav href="/">Home</a>
-        <a data-nav href="/browse">Browse</a>
-        <a data-nav href="/list">List</a>
-        <a class="btn btn-primary small-btn" href="/login">Login</a>
-        <a class="btn btn-secondary small-btn" href="/signup">Sign Up</a>
-      </nav>
-    </header>
-
-    <section class="page-intro compact-intro">
-      <div class="page-intro-inner list-hero">
-        <h1>List Your Property</h1>
-        <p>Help students find their perfect accommodation</p>
-        <div class="list-tab-wrap">
-          <button id="ownerTab" type="button" class="tab-btn active-tab">List a Flat</button>
-          <button id="roommateTab" type="button" class="tab-btn">Find Roommates</button>
+    <header class="nav glass-nav">
+      <div class="nav-inner">
+        <a href="/" class="brand">Student Flat Finder</a>
+        <nav>
+          <a data-nav href="/">Home</a>
+          <a data-nav href="/browse">Browse</a>
+          <a data-nav href="/list">List</a>
+          <a class="btn btn-primary small-btn" href="/login">Login</a>
+          <a class="btn btn-secondary small-btn" href="/signup">Sign Up</a>
+        </nav>
+        <div class="nav-profile">
+          <span class="profile-icon" title="Profile">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-2.5 3.5-4 8-4s8 1.5 8 4"/></svg>
+          </span>
         </div>
       </div>
-    </section>
+    </header>
+
+
 
     <main class="page page-wide">
       <form id="ownerForm" class="simple-form card list-form" autocomplete="off">
@@ -37,11 +35,21 @@
         </div>
         <label>Description *<textarea name="description" rows="4" placeholder="Describe your property, nearby facilities, and what makes it special..." required></textarea></label>
 
+
         <label>Property Type *</label>
         <div class="choice-card">
-          <span><strong>Single Room Only</strong><small class="muted">Owners can list only a private single room</small></span>
+          <label style="margin-right:1.5em;">
+            <input type="radio" name="flatType" value="room-only" checked /> Single Room Only
+          </label>
+          <label>
+            <input type="radio" name="flatType" value="shared-room" /> Shared Room (multiple students)
+          </label>
         </div>
-        <input type="hidden" name="flatType" value="room-only" />
+        <div id="sharedRoomFields" style="display:none;margin-top:0.7em;">
+          <label>How many total can live? *
+            <input name="maxOccupants" type="number" min="2" max="20" value="2" />
+          </label>
+        </div>
 
         <label>Address *<input id="ownerAddressInput" name="address" type="text" placeholder="Enter full address" required /></label>
         <div class="list-grid-2">
@@ -66,78 +74,86 @@
           <label><input type="checkbox" name="amenities" value="Garden" /> Garden</label>
         </div>
 
-        <label>Property Photos (minimum 2, you can add many more) *<input id="ownerImagesInput" name="images" type="file" accept="image/*" multiple /></label>
-        <div id="ownerExistingImages" class="chip-list"></div>
-        <p id="ownerImagesCount" class="muted">0 added</p>
-        <label>360° Photos (minimum 2, you can add many more) *<input id="ownerTourInput" name="tour360" type="file" accept="image/*" multiple /></label>
-        <div id="ownerExistingTours" class="chip-list"></div>
-        <p id="ownerTourCount" class="muted">0 added</p>
+        <div style="margin-top: 1.5em;"></div>
+        <label>Flat Photo Links (add at least 2, comma separated) *
+          <input id="ownerImagesLinks" name="imagesLinks" type="text" placeholder="Paste image URLs, separated by commas" required />
+          <input id="cloudinaryImageUpload" type="file" accept="image/*" multiple style="margin-top:8px;" />
+        </label>
+          <label>360° Photo Links (add at least 2, comma separated) *
+          <input id="ownerTourLinks" name="tour360Links" type="text" placeholder="Paste 360° image URLs, separated by commas" required />
+          <input id="cloudinaryTourUpload" type="file" accept="image/*" multiple style="margin-top:8px;" />
+        </label>
         <label>Available From *<input name="availableFrom" type="date" required /></label>
         <label>House Rules (Optional)<textarea rows="3" name="houseRules" placeholder="Any specific rules or preferences for tenants..."></textarea></label>
         <label class="hidden">Owner Name<input name="ownerName" type="text" /></label>
         <button id="ownerSubmitBtn" class="btn btn-primary list-submit" type="submit">List Property</button>
       </form>
 
-      <form id="roommateForm" class="simple-form card list-form hidden" autocomplete="off">
-        <h2>Create Your Roommate Profile</h2>
-        <p class="muted">Help property owners find the perfect roommate match</p>
-        <div class="list-grid-3">
-          <label>Full Name *<input name="name" type="text" required /></label>
-          <label>Age *<input name="age" type="number" min="18" max="45" value="20" required /></label>
-          <label>Course/Field *<input name="course" type="text" placeholder="e.g., Computer Science" required /></label>
-        </div>
-        <label>About Me *<textarea name="bio" rows="4" placeholder="Tell potential roommates about yourself, your lifestyle, and what you're looking for..." required></textarea></label>
 
-        <label>Max Budget (₹/month) *<input name="preferredRentMax" type="number" value="15000" required /></label>
-        <label>How many students can live in this room? *<input name="maxOccupants" type="number" min="1" max="10" value="2" required /></label>
-
-        <label>Room/Flat Address *<input id="roommateAddressInput" name="address" type="text" placeholder="Enter full address" required /></label>
-        <div class="list-grid-2">
-          <input name="lat" type="number" step="any" placeholder="Latitude (optional)" />
-          <input name="lng" type="number" step="any" placeholder="Longitude (optional)" />
-        </div>
-        <button id="selectRoommateLocationBtn" type="button" class="btn btn-light">📍 Open address in map</button>
-
-        <label>Personality Profile</label>
-        <label>Cleanliness Level<input name="cleanliness" type="range" min="1" max="10" value="5" /></label>
-        <label>Social Level<input name="socialLevel" type="range" min="1" max="10" value="5" /></label>
-        <label>Study Focus<input name="studyHabits" type="range" min="1" max="10" value="5" /></label>
-
-        <label>Interests & Hobbies</label>
-        <div class="list-amenities-grid">
-          <label><input type="checkbox" name="interest" value="Reading" /> Reading</label>
-          <label><input type="checkbox" name="interest" value="Music" /> Music</label>
-          <label><input type="checkbox" name="interest" value="Sports" /> Sports</label>
-          <label><input type="checkbox" name="interest" value="Gaming" /> Gaming</label>
-          <label><input type="checkbox" name="interest" value="Cooking" /> Cooking</label>
-          <label><input type="checkbox" name="interest" value="Movies" /> Movies</label>
-          <label><input type="checkbox" name="interest" value="Fitness" /> Fitness</label>
-          <label><input type="checkbox" name="interest" value="Art" /> Art</label>
-          <label><input type="checkbox" name="interest" value="Technology" /> Technology</label>
-          <label><input type="checkbox" name="interest" value="Travel" /> Travel</label>
-          <label><input type="checkbox" name="interest" value="Photography" /> Photography</label>
-          <label><input type="checkbox" name="interest" value="Dancing" /> Dancing</label>
-        </div>
-
-        <label>Profile Photos (minimum 2 normal images) *<input id="roommateImagesInput" type="file" name="images" accept="image/*" multiple /></label>
-        <div id="roommateExistingImages" class="chip-list"></div>
-        <p id="roommateImagesCount" class="muted">0 added</p>
-        <label>Preferred Move-in Date *<input type="date" name="moveInDate" required /></label>
-        <label>360° Photos (minimum 2 panoramic images) *<input id="roommateTourInput" type="file" name="tour360" accept="image/*" multiple /></label>
-        <div id="roommateExistingTours" class="chip-list"></div>
-        <p id="roommateTourCount" class="muted">0 added</p>
-        <button id="roommateSubmitBtn" class="btn btn-secondary list-submit" type="submit">Create Profile</button>
-      </form>
 
       <section id="ownerListingsPanel" class="card list list-form hidden">
         <h2>Your Listed Flats</h2>
         <div id="ownerListingsList" class="conversation-list"></div>
       </section>
 
+
+
       <p id="listStatus" class="status-text"></p>
     </main>
 
+    <footer class="footer glass-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <span class="brand">Student Flat Finder</span>
+          <span class="footer-copy">&copy; 2026 MakeItHappen. All rights reserved.</span>
+        </div>
+        <div class="footer-links">
+          <a href="/browse">Browse</a>
+          <a href="/list">List Flat</a>
+          <a href="/community">Community</a>
+          <a href="/feedback">Feedback</a>
+        </div>
+        <div class="footer-social">
+          <a href="#" title="Instagram" class="footer-social-icon"><svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+          <a href="#" title="Twitter" class="footer-social-icon"><svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53A4.48 4.48 0 0 0 22.4 1.64a9.09 9.09 0 0 1-2.88 1.1A4.48 4.48 0 0 0 16.11 0c-2.5 0-4.5 2.01-4.5 4.5 0 .35.04.7.11 1.03C7.69 5.36 4.07 3.6 1.64 0.16c-.38.65-.6 1.4-.6 2.2 0 1.52.77 2.86 1.94 3.65A4.48 4.48 0 0 1 .96 5.1v.06c0 2.13 1.52 3.91 3.54 4.31-.37.1-.76.16-1.16.16-.28 0-.55-.03-.81-.08.55 1.72 2.16 2.97 4.07 3A9.05 9.05 0 0 1 0 19.54a12.8 12.8 0 0 0 6.92 2.03c8.3 0 12.85-6.88 12.85-12.85 0-.2 0-.39-.01-.58A9.22 9.22 0 0 0 24 4.59a9.1 9.1 0 0 1-2.6.71A4.48 4.48 0 0 0 23 3z"/></svg></a>
+        </div>
+      </div>
+    </footer>
     <script src="/js/app.js"></script>
     <script src="/js/list.js"></script>
+    <script>
+    // Cloudinary auto-upload logic for all fields (multiple files, no button)
+    const cloudName = 'dkkf3z1jj';
+    const uploadPreset = 'unsigned_preset';
+    function setupCloudinaryAutoUpload(fileInputId, linksInputId) {
+      const fileInput = document.getElementById(fileInputId);
+      const linksInput = document.getElementById(linksInputId);
+      if (fileInput && linksInput) {
+        fileInput.addEventListener('change', async () => {
+          const files = Array.from(fileInput.files);
+          if (!files.length) return;
+          let urls = linksInput.value.trim() ? linksInput.value.split(',').map(s => s.trim()) : [];
+          for (const file of files) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', uploadPreset);
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+              method: 'POST',
+              body: formData
+            });
+            const data = await res.json();
+            if (data.secure_url) {
+              urls.push(data.secure_url);
+            }
+          }
+          linksInput.value = urls.join(', ');
+          fileInput.value = '';
+        });
+      }
+    }
+    setupCloudinaryAutoUpload('cloudinaryImageUpload', 'ownerImagesLinks');
+    setupCloudinaryAutoUpload('cloudinaryTourUpload', 'ownerTourLinks');
+    // Roommate upload logic removed
+    </script>
   </body>
 </html>

@@ -7,17 +7,31 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header class="nav">
-      <a href="/" class="brand">Student Flat Finder</a>
-      <nav>
-        <a data-nav href="/browse">Browse</a>
-        <a data-nav href="/browse/map">Map View</a>
-        <a data-nav href="/list">List Flat</a>
-        <a data-nav href="/chat">Chat</a>
-        <a data-nav href="/dashboard">Dashboard</a>
-        <a class="btn btn-primary small-btn" href="/login">Login</a>
-        <a class="btn btn-secondary small-btn" href="/signup">Sign Up</a>
-      </nav>
+    <header class="nav glass-nav">
+      <div class="nav-inner">
+        <a href="/" class="brand">Student Flat Finder</a>
+        <nav>
+          <a data-nav href="/browse">Browse</a>
+          <a data-nav href="/browse/map">Map View</a>
+          <a data-nav href="/list">List Flat</a>
+          <a data-nav href="/chat">Chat</a>
+          <a data-nav href="/dashboard">Dashboard</a>
+          <a class="btn btn-primary small-btn" href="/login">Login</a>
+          <a class="btn btn-secondary small-btn" href="/signup">Sign Up</a>
+        </nav>
+        <div class="nav-profile">
+          <span class="profile-icon" id="profileIcon" tabindex="0" title="Profile">
+            <!-- Simple user icon SVG -->
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-2.5 3.5-4 8-4s8 1.5 8 4"/></svg>
+          </span>
+          <div class="account-dropdown hidden" id="profileDropdown" role="menu">
+            <a href="/profile" role="menuitem">Edit Profile</a>
+            <a href="/subscription" role="menuitem">Subscription</a>
+            <a href="/feedback" role="menuitem">Feedback</a>
+            <button id="logoutBtn" class="account-logout" type="button" role="menuitem">Logout</button>
+          </div>
+        </div>
+      </div>
     </header>
 
     <main>
@@ -26,24 +40,24 @@
       <section class="hero glass-panel">
         <h1 class="animate-up">Find Your Perfect <span>Student Flat</span></h1>
         <p class="animate-up delay-1">
-          Connect with roommates, discover amazing flats, and find your ideal student accommodation with our
+          Discover amazing flats and find your ideal student accommodation with our
           AI-powered matching system.
         </p>
         <div class="hero-actions animate-up delay-2">
           <a class="btn btn-primary" href="/browse">Browse Flats</a>
-          <a class="btn btn-secondary" href="/list">List Flat</a>
-          <a class="btn btn-light" href="/login">Login as Owner / Roommate</a>
+          <a class="btn btn-secondary" href="/list">List Flat (Owner Only)</a>
+          <a class="btn btn-light" href="/login">Login</a>
         </div>
       </section>
 
       <section class="features">
         <article class="card">
           <h2>Smart Search</h2>
-          <p>Advanced filters to find your perfect flat and roommates quickly.</p>
+          <p>Advanced filters to find your perfect flat quickly.</p>
         </article>
         <article class="card">
           <h2>Real-time Chat</h2>
-          <p>Connect instantly with owners and potential roommates.</p>
+          <p>Connect instantly with owners.</p>
         </article>
         <article class="card">
           <h2>Secure Payments</h2>
@@ -54,11 +68,29 @@
       <section class="premium-cta">
         <div class="premium-inner">
           <h2>Get Premium Benefits</h2>
-          <p>Subscribe now and get 10% off on rentals plus unlimited chat with owners and roommates.</p>
+          <p>Subscribe now and get 10% off on rentals plus unlimited chat with owners.</p>
           <a class="btn btn-light" href="/subscription">View Subscription Plans</a>
         </div>
       </section>
     </main>
+    <footer class="footer glass-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <span class="brand">Student Flat Finder</span>
+          <span class="footer-copy">&copy; 2026 MakeItHappen. All rights reserved.</span>
+        </div>
+        <div class="footer-links">
+          <a href="/browse">Browse</a>
+          <a href="/list">List Flat</a>
+          <a href="/community">Community</a>
+          <a href="/feedback">Feedback</a>
+        </div>
+        <div class="footer-social">
+          <a href="#" title="Instagram" class="footer-social-icon"><svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+          <a href="#" title="Twitter" class="footer-social-icon"><svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53A4.48 4.48 0 0 0 22.4 1.64a9.09 9.09 0 0 1-2.88 1.1A4.48 4.48 0 0 0 16.11 0c-2.5 0-4.5 2.01-4.5 4.5 0 .35.04.7.11 1.03C7.69 5.36 4.07 3.6 1.64 0.16c-.38.65-.6 1.4-.6 2.2 0 1.52.77 2.86 1.94 3.65A4.48 4.48 0 0 1 .96 5.1v.06c0 2.13 1.52 3.91 3.54 4.31-.37.1-.76.16-1.16.16-.28 0-.55-.03-.81-.08.55 1.72 2.16 2.97 4.07 3A9.05 9.05 0 0 1 0 19.54a12.8 12.8 0 0 0 6.92 2.03c8.3 0 12.85-6.88 12.85-12.85 0-.2 0-.39-.01-.58A9.22 9.22 0 0 0 24 4.59a9.1 9.1 0 0 1-2.6.71A4.48 4.48 0 0 0 23 3z"/></svg></a>
+        </div>
+      </div>
+    </footer>
     <script type="module" src="/js/app.js"></script>
   </body>
 </html>

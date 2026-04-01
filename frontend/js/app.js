@@ -118,29 +118,18 @@ function applyUnifiedNav() {
     Boolean(currentUser) &&
     !isOwner &&
     (role === "student" || (intent === "seeker" && preferredRoomType === "room-only"))
-  const isRoommate =
-    Boolean(currentUser) && !isOwner && !isStudent && (role === "roommate" || preferredRoomType === "room-with-roommates")
-
   let roleLinks = `
     <a data-nav href="/">Home</a>
     <a data-nav href="/browse">Browse</a>
     <a data-nav href="/browse/map">Map View</a>
-  `
-
+  `;
   if (isOwner) {
     roleLinks = `
       <a data-nav href="/">Home</a>
       <a data-nav href="/list?mode=owner">Listing</a>
       <a data-nav href="/dashboard">Dashboard</a>
       <a data-nav href="/chat">Messages</a>
-    `
-  } else if (isRoommate) {
-    roleLinks = `
-      <a data-nav href="/">Home</a>
-      <a data-nav href="/list?mode=roommate">Roommate Listing</a>
-      <a data-nav href="/dashboard">Dashboard</a>
-      <a data-nav href="/chat">Messages</a>
-    `
+    `;
   } else if (isStudent) {
     roleLinks = `
       <a data-nav href="/">Home</a>
@@ -148,7 +137,7 @@ function applyUnifiedNav() {
       <a data-nav href="/browse/map">Map View</a>
       <a data-nav href="/dashboard">Dashboard</a>
       <a data-nav href="/chat">Messages</a>
-    `
+    `;
   }
 
   navContainer.innerHTML = `
@@ -205,13 +194,14 @@ function applyUnifiedNav() {
     logoutBtn.addEventListener("click", logout)
   }
 
-  if (isStudent) {
+  // Only owners can see the listing link. Students cannot list flats.
+  if (!isOwner) {
     const listingLinks = document.querySelectorAll('a[href="/list"], a[href^="/list?"]')
     listingLinks.forEach((link) => {
       link.classList.add("hidden")
       link.setAttribute("aria-hidden", "true")
       link.setAttribute("tabindex", "-1")
-    })
+    });
   }
 }
 
@@ -426,3 +416,25 @@ window.AppUtils = {
   geocodeAddress,
   geocodeAddressNearest,
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+  const profileIcon = document.getElementById("profileIcon");
+  const profileDropdown = document.getElementById("profileDropdown");
+  if (profileIcon && profileDropdown) {
+    profileIcon.addEventListener("click", function (e) {
+      e.stopPropagation();
+      profileDropdown.classList.toggle("hidden");
+    });
+    document.addEventListener("click", function (e) {
+      if (!profileDropdown.classList.contains("hidden") && !profileDropdown.contains(e.target) && e.target !== profileIcon) {
+        profileDropdown.classList.add("hidden");
+      }
+    });
+    // Optional: Hide dropdown on ESC key
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        profileDropdown.classList.add("hidden");
+      }
+    });
+  }
+});

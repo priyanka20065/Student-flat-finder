@@ -1,89 +1,67 @@
-const signupForm = document.getElementById("signupForm")
-const signupStatus = document.getElementById("signupStatus")
-const signupIntentStudent = document.getElementById("signupIntentStudent")
-const signupIntentOwner = document.getElementById("signupIntentOwner")
-const signupStudentFlow = document.getElementById("signupStudentFlow")
-const signupFlowBuy = document.getElementById("signupFlowBuy")
-const signupFlowRoommate = document.getElementById("signupFlowRoommate")
-const signupUniversityWrap = document.getElementById("signupUniversityWrap")
-const signupUniversity = document.getElementById("signupUniversity")
-
-function toggleSignupStudentFlow() {
-  const isStudent = Boolean(signupIntentStudent?.checked)
-  const isRoomOnlyFlow = Boolean(signupFlowBuy?.checked)
-  signupStudentFlow?.classList.toggle("hidden", !isStudent)
-  signupUniversityWrap?.classList.toggle("hidden", !isStudent || !isRoomOnlyFlow)
-  if (signupUniversity) {
-    signupUniversity.required = isStudent && isRoomOnlyFlow
-  }
-}
+const signupForm = document.getElementById("signupForm");
+const signupStatus = document.getElementById("signupStatus");
+const signupStep1 = document.getElementById("signupStep1");
+const signupStep2 = document.getElementById("signupStep2");
+const nextStepBtn = document.getElementById("nextStepBtn");
+const prevStepBtn = document.getElementById("prevStepBtn");
 
 function resolveRedirect(user) {
-  const intent = String(user?.intent || "").toLowerCase()
-  const preferredRoomType = String(user?.preferredRoomType || "").toLowerCase()
-
-  if (intent !== "owner" && preferredRoomType === "room-only") {
-    return "/personality-quiz?onboarding=1"
+  // Always redirect students to dashboard, only owners can list
+  if (user && (user.role === "owner" || user.intent === "owner")) {
+    return "/dashboard";
   }
+  return "/dashboard";
+}
 
-  return "/dashboard"
+if (nextStepBtn && signupStep1 && signupStep2) {
+  nextStepBtn.addEventListener("click", () => {
+    // Validate step 1 fields
+    const name = signupForm.elements["name"].value.trim();
+    const email = signupForm.elements["email"].value.trim();
+    const password = signupForm.elements["password"].value;
+    const confirmPassword = signupForm.elements["confirmPassword"].value;
+    if (!name || !email || !password || !confirmPassword) {
+      signupStatus.textContent = "Please fill all required fields.";
+      return;
+    }
+    if (password !== confirmPassword) {
+      signupStatus.textContent = "Passwords do not match.";
+      return;
+    }
+    signupStatus.textContent = "";
+    signupStep1.style.display = "none";
+    signupStep2.style.display = "block";
+  });
+}
+
+if (prevStepBtn && signupStep1 && signupStep2) {
+  prevStepBtn.addEventListener("click", () => {
+    signupStep2.style.display = "none";
+    signupStep1.style.display = "block";
+  });
 }
 
 signupForm.addEventListener("submit", async (event) => {
-  event.preventDefault()
-
-  const formData = new FormData(signupForm)
-  const payload = Object.fromEntries(formData.entries())
-
-  if (payload.password !== payload.confirmPassword) {
-    signupStatus.textContent = "Passwords do not match"
-    return
-  }
-
-  const isNormalStudent = payload.intent === "seeker" && (payload.preferredRoomType || "room-only") === "room-only"
-  if (isNormalStudent && !String(payload.university || "").trim()) {
-    signupStatus.textContent = "University / College name is required for normal students."
-    return
-  }
+  event.preventDefault();
+  // Collect all form data from both steps
+  const formData = new FormData(signupForm);
+  // Amenities: collect all checked
+  const amenities = [];
+  signupForm.querySelectorAll('input[name="amenities"]:checked').forEach(cb => amenities.push(cb.value));
+  const payload = Object.fromEntries(formData.entries());
+  payload.amenities = amenities;
 
   try {
-    const interests = String(payload.interests || "")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean)
-
     const user = await window.AppUtils.api("/api/auth/signup", {
       method: "POST",
-      body: JSON.stringify({
-        name: payload.name,
-        email: payload.email,
-        intent: payload.intent,
-        preferredRoomType: payload.intent === "owner" ? null : payload.preferredRoomType || "room-only",
-        university: String(payload.university || "").trim(),
-        password: payload.password,
-        course: payload.course,
-        bio: payload.bio,
-        interests,
-        personality: {
-          cleanliness: Number(payload.cleanliness || 5),
-          socialLevel: Number(payload.socialLevel || 5),
-          studyHabits: Number(payload.studyHabits || 5),
-        },
-      }),
-    })
-
-    window.AppUtils.setCurrentUser(user)
-    signupStatus.textContent = "Signup successful. Redirecting..."
+      body: JSON.stringify(payload),
+    });
+    window.AppUtils.setCurrentUser(user);
+    signupStatus.textContent = "Signup successful. Redirecting...";
     setTimeout(() => {
-      window.location.href = resolveRedirect(user)
-    }, 900)
+      window.location.href = resolveRedirect(user);
+    }, 900);
   } catch (error) {
-    signupStatus.textContent = error.message
+    signupStatus.textContent = error.message;
   }
-})
-
-signupIntentStudent?.addEventListener("change", toggleSignupStudentFlow)
-signupIntentOwner?.addEventListener("change", toggleSignupStudentFlow)
-signupFlowBuy?.addEventListener("change", toggleSignupStudentFlow)
-signupFlowRoommate?.addEventListener("change", toggleSignupStudentFlow)
-toggleSignupStudentFlow()
+});

@@ -9,8 +9,12 @@ function toggleStudentFlow() {
   loginStudentFlow?.classList.toggle("hidden", !isStudent)
 }
 
-function resolveRedirect(user) {
-  return "/dashboard"
+function resolveRedirect(user, fallbackIntent = "") {
+  const normalizedRole = String(user?.role || "").toLowerCase()
+  const normalizedIntent = String(user?.intent || fallbackIntent || "").toLowerCase()
+  const isOwner = normalizedRole === "owner" || normalizedIntent === "owner"
+
+  return isOwner ? "/dashboard?mode=owner" : "/dashboard?mode=student"
 }
 
 loginForm.addEventListener("submit", async (event) => {
@@ -29,7 +33,7 @@ loginForm.addEventListener("submit", async (event) => {
     window.AppUtils.setCurrentUser(user)
     loginStatus.textContent = "Login successful. Redirecting..."
     setTimeout(() => {
-      window.location.href = resolveRedirect(user)
+      window.location.href = resolveRedirect(user, payload.intent)
     }, 700)
   } catch (error) {
     loginStatus.textContent = error.message

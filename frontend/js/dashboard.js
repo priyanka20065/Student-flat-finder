@@ -34,12 +34,11 @@ function resolveDashboardMode(user) {
 function buildRoommateListingCard(profile) {
   const chips = (profile.interests || []).slice(0, 4).map((item) => `<span class="chip">${item}</span>`).join("")
   const roommateDetailUrl = `/roommate/${encodeURIComponent(profile.id)}`
-
+  const imageUrl = resolveImageUrl(profile.images?.[0] || "/assets/modern-apartment-living.png")
   return `
     <article class="dashboard-reco-card">
       <div class="dashboard-reco-image-wrap">
-        <img src="${profile.images?.[0] || "/assets/modern-apartment-living.png"}" alt="${profile.name}" class="dashboard-reco-image" />
-        <span class="dashboard-match">Your Listing</span>
+        <img src="${resolveImageUrl(profile.images?.[0])}" alt="${profile.name}" class="dashboard-reco-image" onerror="this.onerror=null;this.src='/assets/modern-apartment-living.png';" />
         <span class="dashboard-type">Roommate Profile</span>
       </div>
       <div class="dashboard-reco-content">
@@ -107,13 +106,11 @@ function scoreRoommateMatch(roommate, studentProfile) {
 function buildMatchedStudentListingCard(profile, match) {
   const chips = (match?.sharedInterests || []).slice(0, 4).map((item) => `<span class="chip">${item}</span>`).join("")
   const roommateDetailUrl = `/roommate/${encodeURIComponent(profile.id)}`
-  const badge = match?.sameCollege ? "College Match" : `${Number(match?.matchPercent || 0)}% Match`
-
+  const imageUrl = resolveImageUrl(profile.images?.[0] || "/assets/modern-apartment-living.png")
   return `
     <article class="dashboard-reco-card">
       <div class="dashboard-reco-image-wrap">
-        <img src="${profile.images?.[0] || "/assets/modern-apartment-living.png"}" alt="${profile.name}" class="dashboard-reco-image" />
-        <span class="dashboard-match">${badge}</span>
+        <img src="${imageUrl}" alt="${profile.name}" class="dashboard-reco-image" onerror="this.onerror=null;this.src='/assets/modern-apartment-living.png';" />
         <span class="dashboard-type">Student Listing</span>
       </div>
       <div class="dashboard-reco-content">
@@ -134,6 +131,13 @@ function buildRecommendationCard(flat, isOwner = false) {
   const chips = (flat.amenities || []).slice(0, 3).map((item) => `<span class="chip">${item}</span>`).join("")
   const badge = flat.flatType === "room-only" ? "Room Only" : "Room with Roommates"
   const stats = flat.stats || {}
+  // Show current occupants for shared rooms (students only)
+  let occupantInfo = ""
+  if (flat.flatType === "room-with-roommates") {
+    const current = Array.isArray(flat.roommates) ? flat.roommates.length : 0;
+    const max = flat.maxOccupants || 1;
+    occupantInfo = `<p>Current Occupants: <strong>${current}</strong></p><p>Vacancies: <strong>${Math.max(0, max - current)}</strong></p>`
+  }
   const ownerStats = isOwner
     ? `
       <div class="chip-list">
@@ -147,19 +151,20 @@ function buildRecommendationCard(flat, isOwner = false) {
     `
     : ""
 
-  const matchPercent = Math.max(0, Math.min(100, Math.round((Number(flat.matchScore || 0) / 40) * 100)))
-  const matchBadge = isOwner ? "Your Listing" : `${matchPercent}% Match`
+  const matchBadge = isOwner ? "Your Listing" : ""
+  const imageUrl = resolveImageUrl(flat.images?.[0] || "/assets/modern-apartment-living.png")
   return `
     <article class="dashboard-reco-card">
       <div class="dashboard-reco-image-wrap">
-        <img src="${flat.images?.[0] || "/assets/modern-apartment-living.png"}" alt="${flat.title}" class="dashboard-reco-image" />
-        <span class="dashboard-match">${matchBadge}</span>
+        <img src="${imageUrl}" alt="${cleanQuotes(flat.title)}" class="dashboard-reco-image" onerror="this.onerror=null;this.src='/assets/modern-apartment-living.png';" />
+        ${isOwner ? `<span class="dashboard-match">${matchBadge}</span>` : ""}
         <span class="dashboard-type">${badge}</span>
       </div>
       <div class="dashboard-reco-content">
-        <h3>${flat.title}</h3>
-        <p class="muted text-justify">${flat.description}</p>
+        <h3>${cleanQuotes(flat.title)}</h3>
+        <p class="muted text-justify">${cleanQuotes(flat.description)}</p>
         <p class="muted">📍 ${flat.location?.address || ""}</p>
+        ${occupantInfo}
         ${ownerStats}
         <div class="chip-list">${chips}</div>
         <div class="dashboard-reco-bottom">
@@ -169,6 +174,20 @@ function buildRecommendationCard(flat, isOwner = false) {
       </div>
     </article>
   `
+}
+
+// Helper to resolve image URLs for backend-served uploads
+function resolveImageUrl(url) {
+  if (!url) return "/assets/modern-apartment-living.png";
+  if (url.startsWith("/uploads/")) {
+    return "http://localhost:4001" + url;
+  }
+  return url;
+}
+
+// Utility to clean all types of quotes from anywhere in a string
+function cleanQuotes(str) {
+  return String(str || '').replace(/["'“”‘’]/g, '').trim();
 }
 
 async function loadDashboard() {
@@ -196,35 +215,13 @@ async function loadDashboard() {
       role: profile.role || currentUser.role,
       intent: profile.intent || currentUser.intent,
       preferredRoomType: profile.preferredRoomType || currentUser.preferredRoomType,
-    })
-    const isOwner = dashboardMode === "owner"
-    const isRoommateUser = dashboardMode === "roommate"
-
-    let data = []
-    let matchedStudentListings = []
+    });
+    const isOwner = dashboardMode === "owner";
+    let data = [];
     if (isOwner) {
-      data = await window.AppUtils.api(`/api/list/owner/${encodeURIComponent(currentUser.id)}`)
-    } else if (isRoommateUser) {
-      data = await window.AppUtils.api(`/api/list/roommate/${encodeURIComponent(currentUser.id)}`)
+      data = await window.AppUtils.api(`/api/list/owner/${encodeURIComponent(currentUser.id)}`);
     } else {
-      data = await window.AppUtils.api("/api/flats")
-
-      const roommateListings = await window.AppUtils.api("/api/roommates")
-      matchedStudentListings = (Array.isArray(roommateListings) ? roommateListings : [])
-        .map((item) => {
-          const match = scoreRoommateMatch(item, profile)
-          return {
-            ...item,
-            _match: match,
-          }
-        })
-        .filter((item) => item._match?.include)
-        .sort((a, b) => {
-          if (Boolean(b._match?.sameCollege) !== Boolean(a._match?.sameCollege)) {
-            return Number(Boolean(b._match?.sameCollege)) - Number(Boolean(a._match?.sameCollege))
-          }
-          return Number(b._match?.baseScore || 0) - Number(a._match?.baseScore || 0)
-        })
+      data = await window.AppUtils.api("/api/flats");
     }
 
     welcomeTitle.textContent = `Welcome back, ${profile.name || "Student"}!`
@@ -238,13 +235,11 @@ async function loadDashboard() {
       <li>💬 Messages <strong>${Number(activity?.messages || 0)}</strong></li>
     `
 
-    if (!data.length && !(Array.isArray(matchedStudentListings) && matchedStudentListings.length)) {
+    if (!data.length) {
       dashboardRecommendations.innerHTML = isOwner
         ? "<p class='muted'>You have not listed any property yet.</p>"
-        : isRoommateUser
-          ? "<p class='muted'>You have not listed your roommate profile yet.</p>"
-          : "<p class='muted'>No owner listings available yet.</p>"
-      return
+        : "<p class='muted'>No owner listings available yet.</p>";
+      return;
     }
 
     const titleNode = document.querySelector(".dashboard-main-col .results-header h2")
@@ -253,47 +248,26 @@ async function loadDashboard() {
 
     if (isOwner) {
       if (titleNode) {
-        titleNode.textContent = "Your Listings"
+        titleNode.textContent = "Your Listings";
       }
       if (subtitleNode) {
-        subtitleNode.textContent = "Owner dashboard"
+        subtitleNode.textContent = "Owner dashboard";
       }
       if (descNode) {
-        descNode.textContent = "Only your posted properties are shown here"
+        descNode.textContent = "Only your posted properties are shown here";
       }
-    } else if (isRoommateUser) {
-      if (titleNode) {
-        titleNode.textContent = "Your Roommate Listing"
-      }
-      if (subtitleNode) {
-        subtitleNode.textContent = "Listing dashboard"
-      }
-      if (descNode) {
-        descNode.textContent = "Only your posted roommate profile is shown here"
-      }
+      dashboardRecommendations.innerHTML = data.map((flat) => buildRecommendationCard(flat, true)).join("");
     } else {
       if (titleNode) {
-        titleNode.textContent = "Owner Listings"
+        titleNode.textContent = "Owner Listings";
       }
       if (subtitleNode) {
-        subtitleNode.textContent = "Student dashboard"
+        subtitleNode.textContent = "Student dashboard";
       }
       if (descNode) {
-        descNode.textContent = "All owner-listed flats are shown here"
+        descNode.textContent = "All owner-listed flats are shown here";
       }
-    }
-
-    if (isRoommateUser) {
-      dashboardRecommendations.innerHTML = data.map((profile) => buildRoommateListingCard(profile)).join("")
-    } else if (isOwner) {
-      dashboardRecommendations.innerHTML = data.map((flat) => buildRecommendationCard(flat, true)).join("")
-    } else {
-      const flatCards = data.map((flat) => buildRecommendationCard(flat, false)).join("")
-      const roommateCards = matchedStudentListings
-        .map((item) => buildMatchedStudentListingCard(item, item._match))
-        .join("")
-
-      dashboardRecommendations.innerHTML = `${flatCards}${roommateCards}`
+      dashboardRecommendations.innerHTML = data.map((flat) => buildRecommendationCard(flat, false)).join("");
     }
   } catch (error) {
     dashboardStatus.textContent = error.message

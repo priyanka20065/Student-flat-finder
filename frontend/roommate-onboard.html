@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roommate Onboarding</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="onboard-main">
+    <h1 style="text-align:center; margin-bottom: 1.5rem;">Roommate Onboarding</h1>
+    <form id="onboardForm" class="card modern-onboard-form" autocomplete="off">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="nameInput">Name</label>
+          <input type="text" name="name" id="nameInput" required />
+        </div>
+        <div class="form-group">
+          <label for="emailInput">Email</label>
+          <input type="email" name="email" id="emailInput" required />
+        </div>
+        <div class="form-group">
+          <label for="ageInput">Age</label>
+          <input type="number" name="age" id="ageInput" min="16" max="100" required />
+        </div>
+        <div class="form-group">
+          <label for="genderInput">Gender</label>
+          <select name="gender" id="genderInput" required>
+            <option value="">Select</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="professionInput">Profession / Study</label>
+          <input type="text" name="profession" id="professionInput" placeholder="e.g. B.Tech CSE, MBA, Designer" required />
+        </div>
+        <div class="form-group">
+          <label for="scheduleInput">Daily Schedule</label>
+          <input type="text" name="schedule" id="scheduleInput" placeholder="e.g. Early riser, Night owl, 7am-11pm" required />
+        </div>
+        <div class="form-group">
+          <label for="cleanlinessInput">Cleanliness Level</label>
+          <select name="cleanliness" id="cleanlinessInput" required>
+            <option value="">Select</option>
+            <option value="Very Clean">Very Clean</option>
+            <option value="Average">Average</option>
+            <option value="Messy">Messy</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="habitsInput">Smoking/Drinking Habits</label>
+          <select name="habits" id="habitsInput" required>
+            <option value="">Select</option>
+            <option value="No">No</option>
+            <option value="Occasionally">Occasionally</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="foodInput">Food Preferences</label>
+          <select name="food" id="foodInput" required>
+            <option value="">Select</option>
+            <option value="Veg">Veg</option>
+            <option value="Non-Veg">Non-Veg</option>
+            <option value="Vegan">Vegan</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="socialInput">Social Preferences</label>
+          <select name="social" id="socialInput" required>
+            <option value="">Select</option>
+            <option value="Introvert">Introvert</option>
+            <option value="Extrovert">Extrovert</option>
+            <option value="Ambivert">Ambivert</option>
+          </select>
+        </div>
+        <div class="form-group form-bio" style="grid-column: 1 / -1;">
+          <label for="bioInput">Bio</label>
+          <textarea name="bio" id="bioInput" rows="2" placeholder="Tell us about yourself..."></textarea>
+        </div>
+        <div class="form-group form-interests" style="grid-column: 1 / -1;">
+          <label for="interestsInput">Interests (comma separated)</label>
+          <input type="text" name="interests" id="interestsInput" placeholder="e.g. Music, Sports, Reading" />
+        </div>
+      </div>
+      <div style="display: flex; justify-content: center; margin-top: 2rem;">
+        <button type="submit" class="btn btn-primary" style="min-width: 180px; font-size: 1.1rem;">Submit</button>
+      </div>
+      <p id="onboardStatus" class="status-text" style="text-align:center; margin-top: 1rem;"></p>
+    </form>
+    <style>
+      .modern-onboard-form {
+        max-width: 900px;
+        margin: 0 auto;
+        background: rgba(30, 34, 54, 0.95);
+        border-radius: 18px;
+        box-shadow: 0 4px 32px 0 rgba(0,0,0,0.18);
+        padding: 2.5rem 2rem 2rem 2rem;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem 2rem;
+        align-items: end;
+      }
+      .form-group label {
+        font-weight: 600;
+        color: #bfcfff;
+        margin-bottom: 0.4rem;
+        display: block;
+        letter-spacing: 0.01em;
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 0.7rem 1rem;
+        border-radius: 8px;
+        border: 1px solid #3a4069;
+        background: #23263a;
+        color: #e0e6ff;
+        font-size: 1rem;
+        margin-top: 0.2rem;
+        transition: border 0.2s;
+      }
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        border: 1.5px solid #6c8cff;
+        outline: none;
+      }
+      .form-group textarea {
+        resize: vertical;
+        min-height: 48px;
+      }
+      .btn.btn-primary {
+        background: linear-gradient(90deg, #4f8cff 0%, #6c8cff 100%);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.8rem 2.2rem;
+        font-weight: 700;
+        font-size: 1.1rem;
+        box-shadow: 0 2px 12px 0 rgba(76, 140, 255, 0.08);
+        cursor: pointer;
+        transition: background 0.2s, box-shadow 0.2s;
+      }
+      .btn.btn-primary:hover {
+        background: linear-gradient(90deg, #6c8cff 0%, #4f8cff 100%);
+        box-shadow: 0 4px 24px 0 rgba(76, 140, 255, 0.18);
+      }
+      @media (max-width: 700px) {
+        .modern-onboard-form {
+          padding: 1.2rem 0.5rem 1.5rem 0.5rem;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </main>
+  <script src="/js/roommate-onboard.js"></script>
+</body>
+</html>

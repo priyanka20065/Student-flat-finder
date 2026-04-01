@@ -27,11 +27,43 @@
 
     <main class="page">
 
+
       <form id="quizForm" class="simple-form">
-        <label>Cleanliness (1-10)<input name="cleanliness" type="number" min="1" max="10" value="5" /></label>
-        <label>Social Level (1-10)<input name="socialLevel" type="number" min="1" max="10" value="5" /></label>
-        <label>Study Habits (1-10)<input name="studyHabits" type="number" min="1" max="10" value="5" /></label>
-        <label>Interests (comma separated)<input name="interests" type="text" placeholder="coding, music, fitness" /></label>
+        <label>Preferred Monthly Rent Range (₹2,000 - ₹50,000)
+          <input name="budget" type="range" min="2000" max="50000" step="500" value="15000" oninput="this.nextElementSibling.value = this.value" />
+          <output style="margin-left:10px; color:#38bdf8; font-weight:600;">15000</output>
+        </label>
+
+        <label>Room Type *</label>
+        <div class="choice-card">
+          <label style="margin-right:1.5em;">
+            <input type="radio" name="roomType" value="room-only" checked /> Single Room Only
+          </label>
+          <label>
+            <input type="radio" name="roomType" value="shared-room" /> Shared Room (multiple students)
+          </label>
+        </div>
+
+        <label>Amenities (select all that apply)</label>
+        <div class="amenities-checkboxes">
+          <label><input type="checkbox" name="amenities" value="WiFi" /> WiFi</label>
+          <label><input type="checkbox" name="amenities" value="Parking" /> Parking</label>
+          <label><input type="checkbox" name="amenities" value="Laundry" /> Laundry</label>
+          <label><input type="checkbox" name="amenities" value="Kitchen" /> Kitchen</label>
+          <label><input type="checkbox" name="amenities" value="Study Room" /> Study Room</label>
+          <label><input type="checkbox" name="amenities" value="Gym" /> Gym</label>
+          <label><input type="checkbox" name="amenities" value="Swimming Pool" /> Swimming Pool</label>
+          <label><input type="checkbox" name="amenities" value="Security" /> Security</label>
+          <label><input type="checkbox" name="amenities" value="Furnished" /> Furnished</label>
+          <label><input type="checkbox" name="amenities" value="Air Conditioning" /> Air Conditioning</label>
+          <label><input type="checkbox" name="amenities" value="Balcony" /> Balcony</label>
+          <label><input type="checkbox" name="amenities" value="Garden" /> Garden</label>
+        </div>
+
+        <label>Any specific house rules or preferences? (optional)
+          <textarea name="houseRules" rows="3" placeholder="Any specific rules or preferences..."></textarea>
+        </label>
+
         <button class="btn btn-primary" type="submit">Run AI Matching</button>
       </form>
 

@@ -1,3 +1,17 @@
+// Helper to resolve image URLs for backend-served uploads
+function resolveImageUrl(url) {
+  if (!url) return "/assets/modern-apartment-living.png";
+  if (url.startsWith("/uploads/")) {
+    return "http://localhost:4001" + url;
+  }
+  return url;
+}
+
+// Utility to clean all types of quotes from start/end of a string
+function cleanQuotes(str) {
+  return String(str || '').replace(/^["'“”‘’]+|["'“”‘’]+$/g, '').trim();
+}
+
 const container = document.getElementById("flatDetail")
 const modalBackdrop = document.getElementById("modalBackdrop")
 const chatModal = document.getElementById("chatModal")
@@ -228,7 +242,7 @@ function setupPanoramaAutoRotate(tourUrls, activeSceneIndex = 0) {
 
   panoramaViewer = window.pannellum.viewer("panoramaViewer", {
     type: "equirectangular",
-    panorama: activeSceneUrl,
+    panorama: resolveImageUrl(activeSceneUrl),
     autoLoad: true,
     showControls: true,
     autoRotate: PANORAMA_AUTO_ROTATE_SPEED,
@@ -310,13 +324,47 @@ function setupPanoramaAutoRotate(tourUrls, activeSceneIndex = 0) {
 }
 
 function buildFlatPage(flat) {
+  // Prepare roommate info variables before using them
+  const roommatesInfo = Array.isArray(flat.roommatesInfo) ? flat.roommatesInfo : [];
+  let roommateTable = '';
+  if (flat.flatType === "room-with-roommates") {
+    let noRoommateMsg = "No roommates yet";
+    if (roommatesInfo.length === 0 && flat.stats?.isSold) {
+      noRoommateMsg = "Room is sold but no roommate details available yet. Roommate info will appear here after booking.";
+    }
+    roommateTable = `
+      <h4 style=\"margin-top:1em;\">Current Roommates</h4>
+      <table class=\"roommate-table\">
+        <thead><tr>
+          <th>Name</th><th>Email</th><th>Profile</th>
+        </tr></thead>
+        <tbody>
+          ${roommatesInfo.length === 0 ? `<tr><td colspan=\"3\" class=\"muted\">${noRoommateMsg}</td></tr>` :
+            roommatesInfo.map(rm => `
+              <tr>
+                <td>${cleanQuotes(rm.name) || '-'}</td>
+                <td>${rm.email || '-'}</td>
+                <td>${rm.email ? `<a class='btn btn-secondary btn-profile' href='/roommate/profile.html?email=${encodeURIComponent(rm.email)}'>View Profile</a>` : '-'}</td>
+              </tr>
+            `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
   currentUser = window.AppUtils.getCurrentUser()
   const isOwnerViewingOwnFlat = Boolean(currentUser && currentUser.role === "owner" && currentUser.id === flat.ownerId)
   const isBoughtByCurrentUser = Boolean(currentUser?.id && String(flat.stats?.purchasedByUserId || "") === String(currentUser.id))
-  const isSoldToAnotherUser = Boolean(flat.stats?.isSold && !isBoughtByCurrentUser)
-  const shouldShowPremiumCta = !flat.stats?.isSold && !isBoughtByCurrentUser && !currentUser?.subscription?.active
+  // For shared rooms, do not block booking if sold; only block for single rooms
+  const isSoldToAnotherUser = flat.flatType === "room-only" ? Boolean(flat.stats?.isSold && !isBoughtByCurrentUser) : false;
+  const currentOccupants = roommatesInfo.length;
+  const maxOccupants = flat.maxOccupants || 1;
+  const vacancies = Math.max(0, maxOccupants - currentOccupants);
+  // Already declared above, do not redeclare here
+  // For shared rooms, booking is always enabled if vacancies > 0
+  const shouldShowPremiumCta = (flat.flatType === "room-only" ? !flat.stats?.isSold : vacancies > 0) && !isBoughtByCurrentUser && !currentUser?.subscription?.active
   const amenities = (flat.amenities || []).map((item) => `<span class="chip">${item}</span>`).join("")
   const roomBadge = flat.flatType === "room-only" ? "Room Only" : "Room with Roommates"
+
   const tourUrls = Array.isArray(flat.virtualTourUrls)
     ? flat.virtualTourUrls
     : flat.virtualTourUrl
@@ -327,7 +375,7 @@ function buildFlatPage(flat) {
   const roommateCards = (flat.roommateProfiles || []).map(
     (roommate) => `
       <article class="flat-roommate-card ${roommate.images?.[0] ? "" : "no-avatar"}">
-        ${roommate.images?.[0] ? `<img src="${roommate.images[0]}" alt="${roommate.name}" class="flat-roommate-avatar" />` : ""}
+        ${roommate.images?.[0] ? `<img src="${resolveImageUrl(roommate.images[0])}" alt="${roommate.name}" class="flat-roommate-avatar" onerror="this.onerror=null;this.src='/assets/modern-apartment-living.png';" />` : ""}
         <div>
           <h4>${roommate.name}</h4>
           <p class="muted">${roommate.age || "-"} years • ${roommate.course || "Student"}</p>
@@ -346,7 +394,7 @@ function buildFlatPage(flat) {
             .map(
               (imageUrl, index) => `
                 <button type="button" class="flat-thumb-item ${index === 0 ? "active-thumb" : ""}" data-index="${index}" aria-label="Open image ${index + 1}">
-                  <img src="${imageUrl}" alt="${flat.title} thumbnail ${index + 1}" class="flat-thumb-image" />
+                  <img src="${resolveImageUrl(imageUrl)}" alt="${flat.title} thumbnail ${index + 1}" class="flat-thumb-image" onerror="this.onerror=null;this.src='/assets/modern-apartment-living.png';" />
                 </button>
               `,
             )
@@ -354,7 +402,7 @@ function buildFlatPage(flat) {
         </div>
         <div class="flat-main-media" id="flatMediaViewport">
           ${mediaImages.length > 1 ? '<button type="button" class="flat-gallery-nav flat-gallery-prev" id="flatPrevImage" aria-label="Previous image">❮</button>' : ""}
-          <img id="flatMainImage" src="${mediaImages[0]}" alt="${flat.title}" class="flat-hero-image" draggable="false" />
+          <img id="flatMainImage" src="${resolveImageUrl(mediaImages[0])}" alt="${flat.title}" class="flat-hero-image" draggable="false" onerror="this.onerror=null;this.src='/assets/modern-apartment-living.png';" />
           ${mediaImages.length > 1 ? '<button type="button" class="flat-gallery-nav flat-gallery-next" id="flatNextImage" aria-label="Next image">❯</button>' : ""}
           <div class="flat-open-hint">Click image to open • Drag left/right to change</div>
         </div>
@@ -368,46 +416,32 @@ function buildFlatPage(flat) {
 
     <section class="flat-layout">
       <article class="card">
-        <h1>${flat.title}</h1>
-        <p class="muted">${flat.description}</p>
-        <p class="muted">📍 ${flat.location.address}</p>
+        <h1 class="flat-title-dark">${cleanQuotes(flat.title)}</h1>
+        <p class="flat-desc-black">${cleanQuotes(flat.description)}</p>
         <p class="muted">👤 Owner: ${flat.ownerName || "Owner"}</p>
         <p><strong>${window.AppUtils.formatINR(flat.rent)}</strong> <span class="muted">per month</span></p>
         <div class="chip-list"><span class="chip">${roomBadge}</span></div>
+        ${roommateTable}
       </article>
 
       <aside class="card">
-        ${
-          isOwnerViewingOwnFlat
-            ? `<h3>Listing Stats</h3>
-               <div class="action-stack">
-                 <button class="btn btn-light" type="button">💬 ${Number(flat.stats?.uniqueMessageUsers || 0)} users messaged</button>
-                 <button class="btn btn-light" type="button">❤️ ${Number(flat.stats?.likes || 0)} likes</button>
-                 <button class="btn btn-light" type="button">👁️ ${Number(flat.stats?.views || 0)} views</button>
-                 <button class="btn btn-dark" type="button">${
-                   flat.stats?.isSold
-                     ? `✅ Sold to ${flat.stats?.purchasedByName || "buyer"}`
-                     : "🟢 Available"
-                 }</button>
-               </div>`
-            : `<h3>Interested?</h3>
-               <div class="action-stack">
-                 <button id="chatOwnerBtn" class="btn btn-primary" type="button">💬 Chat with Owner</button>
-                 <button id="bookRoomBtn" class="btn btn-secondary" type="button" ${flat.stats?.isSold ? "disabled" : ""}>${
-                   isBoughtByCurrentUser ? "✅ You Bought This Room" : flat.stats?.isSold ? "✅ Sold" : "🏠 Book Room"
-                 }</button>
-                 <button id="likeFlatBtn" class="btn btn-light" type="button">❤️ Like Flat</button>
-                 <button id="scheduleVisitBtn" class="btn btn-dark" type="button">📞 Schedule Visit</button>
-                 <button class="btn btn-dark" type="button">${
-                   isBoughtByCurrentUser
-                     ? "✅ Bought by You"
-                     : isSoldToAnotherUser
-                     ? `✅ Sold to ${flat.stats?.purchasedByName || "buyer"}`
-                     : "🟢 Available"
-                 }</button>
-                 ${shouldShowPremiumCta ? '<a class="btn btn-premium" href="/subscription">⭐ Get Premium for 10% Off</a>' : ""}
-               </div>`
-        }
+        <h3>Interested?</h3>
+        <div class="action-stack">
+          <button id="chatOwnerBtn" class="btn btn-primary" type="button">💬 Chat with Owner</button>
+          <button id="bookRoomBtn" class="btn btn-secondary" type="button" ${isSoldToAnotherUser ? "disabled" : ""}>${
+            isBoughtByCurrentUser ? "✅ You Bought This Room" : isSoldToAnotherUser ? "✅ Sold" : "🏠 Book Room"
+          }</button>
+          <button id="likeFlatBtn" class="btn btn-light" type="button">❤️ Like Flat</button>
+          <button id="scheduleVisitBtn" class="btn btn-dark" type="button">📞 Schedule Visit</button>
+          <button class="btn btn-dark" type="button">${
+            isBoughtByCurrentUser
+              ? "✅ Bought by You"
+              : isSoldToAnotherUser
+              ? `✅ Sold to ${flat.stats?.purchasedByName || "buyer"}`
+              : "🟢 Available"
+          }</button>
+          ${shouldShowPremiumCta ? '<a class="btn btn-premium" href="/subscription">⭐ Get Premium for 10% Off</a>' : ""}
+        </div>
       </aside>
     </section>
 
@@ -419,10 +453,9 @@ function buildFlatPage(flat) {
       <article class="card">
         <h3>Quick Info</h3>
         <p><span class="muted">Available From:</span> <strong>${flat.availableFrom}</strong></p>
-        <p><span class="muted">Property Type:</span> <strong>${flat.flatType === "room-only" ? "Private" : "Shared"}</strong></p>
-        <p><span class="muted">Photos:</span> <strong>${mediaImages.length}</strong></p>
-        <p><span class="muted">360° Scenes:</span> <strong>${tourUrls.length}</strong></p>
-        <p><span class="muted">Distance From Campus:</span> <strong>${flat.distanceFromCampusKm} km</strong></p>
+        <p><span class="muted">Room Type:</span> <strong>${flat.maxOccupants && flat.maxOccupants > 1 ? "Shared" : "Single"}</strong></p>
+        ${flat.flatType === "room-with-roommates" ? `<p><span class="muted">Current Occupants:</span> <strong>${currentOccupants}</strong></p>` : ""}
+        ${flat.flatType === "room-with-roommates" ? `<p><span class="muted">Vacancies:</span> <strong>${vacancies}</strong></p>` : ""}
       </article>
     </section>
 
@@ -437,7 +470,7 @@ function buildFlatPage(flat) {
                    .map(
                      (tourUrl, index) => `
                        <button type="button" class="tour-scene-thumb ${index === 0 ? "active-scene" : ""}" data-scene-index="${index}" aria-label="Open 360 scene ${index + 1}">
-                         <img src="${tourUrl}" alt="${flat.title} 360 scene ${index + 1}" />
+                         <img src="${resolveImageUrl(tourUrl)}" alt="${flat.title} 360 scene ${index + 1}" onerror="this.onerror=null;this.src='/assets/modern-apartment-living.png';" />
                          <span>Scene ${index + 1}</span>
                        </button>
                      `,
@@ -617,14 +650,28 @@ async function openBookModal(flat) {
     return
   }
 
-  if (String(flat.stats?.purchasedByUserId || "") === String(currentUser.id || "")) {
-    window.alert("You have already bought this room.")
-    return
-  }
 
-  if (flat.stats?.isSold) {
-    window.alert(`This flat is already sold${flat.stats?.purchasedByName ? ` to ${flat.stats.purchasedByName}` : ""}.`)
-    return
+  if (flat.flatType === "room-with-roommates") {
+    const currentOccupants = Array.isArray(flat.roommates) ? flat.roommates.length : 0;
+    const maxOccupants = flat.maxOccupants || 1;
+    if (currentOccupants >= maxOccupants) {
+      window.alert("All seats in this shared flat are filled.");
+      return;
+    }
+    // Optionally, block if user already booked this flat as roommate
+    if (Array.isArray(flat.roommates) && flat.roommates.some(rm => String(rm.purchasedByUserId || "") === String(currentUser.id || ""))) {
+      window.alert("You have already booked a seat in this flat.");
+      return;
+    }
+  } else {
+    if (String(flat.stats?.purchasedByUserId || "") === String(currentUser.id || "")) {
+      window.alert("You have already bought this room.");
+      return;
+    }
+    if (flat.stats?.isSold) {
+      window.alert(`This flat is already sold${flat.stats?.purchasedByName ? ` to ${flat.stats.purchasedByName}` : ""}.`);
+      return;
+    }
   }
 
   const hasPremium = Boolean(currentUser.subscription?.active)
@@ -703,7 +750,28 @@ async function openBookModal(flat) {
             method: "POST",
             body: JSON.stringify(response),
           })
-          bookStatus.textContent = verify.verified ? "Booking payment successful ✅" : "Payment verification failed"
+          if (verify.verified) {
+            bookStatus.textContent = "Booking payment successful ✅";
+            // Always reload flat info after booking
+            setTimeout(async () => {
+              // Always reload flat info after booking for both owner and student views
+              const parts = window.location.pathname.split("/").filter(Boolean);
+              const flatId = parts[1];
+              if (flatId) {
+                const response = await fetch(`/api/flats/${flatId}`);
+                if (response.ok) {
+                  activeFlat = await response.json();
+                  buildFlatPage(activeFlat);
+                } else {
+                  window.location.reload();
+                }
+              } else {
+                window.location.reload();
+              }
+            }, 1000);
+          } else {
+            bookStatus.textContent = "Payment verification failed";
+          }
         },
       })
 

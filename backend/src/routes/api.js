@@ -1,5 +1,50 @@
-
 module.exports = function (app, ctx) {
+  // Get roommate profile by email (for profile page)
+  app.get("/api/roommate/profile", (req, res) => {
+    const email = String(req.query.email || "").trim().toLowerCase();
+    if (!email) return res.status(400).json({ message: "Email required" });
+    let user = null;
+    if (ctx.state.users && typeof ctx.state.users.values === "function") {
+      user = Array.from(ctx.state.users.values()).find(u => (u.email || "").toLowerCase() === email);
+    }
+    if (!user) return res.status(404).json({ message: "User not found" });
+    // Find roommate profile by userId
+    let rm = null;
+    if (ctx.state.roommates && Array.isArray(ctx.state.roommates)) {
+      rm = ctx.state.roommates.find(r => String(r.createdByUserId) === String(user.id));
+    }
+    if (!rm) return res.status(404).json({ message: "Roommate profile not found" });
+    // Merge user info and roommate info, prefer roommate fields but fallback to user fields
+    const profile = {
+      id: rm.id,
+      name: rm.name || user.name,
+      email: user.email || rm.email,
+      age: rm.age || user.age,
+      gender: rm.gender || user.gender,
+      profession: rm.profession || rm.course || user.profession || user.course,
+      course: rm.course || user.course,
+      schedule: rm.schedule || user.schedule,
+      cleanliness: rm.cleanliness || (rm.personality && rm.personality.cleanliness),
+      habits: rm.habits || user.habits,
+      food: rm.food || user.food,
+      social: rm.social || user.social,
+      bio: rm.bio || user.bio,
+      interests: Array.isArray(rm.interests) ? rm.interests : (Array.isArray(user.interests) ? user.interests : []),
+      preferredRentMax: rm.preferredRentMax,
+      maxOccupants: rm.maxOccupants,
+      moveInDate: rm.moveInDate,
+      address: rm.address || user.address,
+      location: rm.location,
+      institution: rm.institution,
+      images: Array.isArray(rm.images) ? rm.images : [],
+      virtualTourUrls: Array.isArray(rm.virtualTourUrls) ? rm.virtualTourUrls : [],
+      virtualTourUrl: rm.virtualTourUrl,
+      createdByUserId: rm.createdByUserId,
+      personality: rm.personality,
+    };
+    res.json(profile);
+  });
+  // ...existing code...
   const {
     state,
     dbCollections,
@@ -62,6 +107,121 @@ module.exports = function (app, ctx) {
     browseSubscribers,
     chatSubscribers
   } = ctx;
+  // Roommate onboarding after booking: create/update roommate profile and link to flat
+  app.post("/api/roommate/onboard", async (req, res) => {
+    const {
+      flatId, userId, name, email, bio, interests,
+      age, gender, profession, schedule, cleanliness, habits, food, social
+    } = req.body || {};
+    if (!flatId || !userId || !name || !email) {
+      res.status(400).json({ message: "flatId, userId, name, and email are required" });
+      return;
+    }
+    const flat = ctx.state.flats.find(f => f.id === flatId);
+    if (!flat || flat.flatType !== "room-with-roommates") {
+      res.status(404).json({ message: "Shared flat not found" });
+      return;
+    }
+    let roommateProfile = ctx.state.roommates.find(rm => String(rm.createdByUserId) === String(userId));
+    if (!roommateProfile) {
+      roommateProfile = {
+        id: ctx.makeId ? ctx.makeId("rm") : makeId("rm"),
+        name,
+        age: age ? Number(age) : 20,
+        gender: gender || "",
+        profession: profession || "",
+        schedule: schedule || "",
+        cleanliness: cleanliness || "",
+        habits: habits || "",
+        food: food || "",
+        social: social || "",
+        course: profession || "",
+        bio: bio || "",
+        preferredRentMax: 0,
+        maxOccupants: 1,
+        moveInDate: new Date().toISOString().slice(0, 10),
+        interests: Array.isArray(interests) ? interests : [],
+        personality: { cleanliness: cleanliness || 5, socialLevel: social || 5, studyHabits: 5 },
+        address: "",
+        location: { address: "", coordinates: [] },
+        institution: { address: "", coordinates: [] },
+        images: [],
+        virtualTourUrls: [],
+        virtualTourUrl: null,
+        createdByUserId: userId,
+      };
+      ctx.state.roommates.unshift(roommateProfile);
+    } else {
+      roommateProfile.name = name;
+      roommateProfile.age = age ? Number(age) : roommateProfile.age;
+      roommateProfile.gender = gender || roommateProfile.gender;
+      roommateProfile.profession = profession || roommateProfile.profession;
+      roommateProfile.schedule = schedule || roommateProfile.schedule;
+      roommateProfile.cleanliness = cleanliness || roommateProfile.cleanliness;
+      roommateProfile.habits = habits || roommateProfile.habits;
+      roommateProfile.food = food || roommateProfile.food;
+      roommateProfile.social = social || roommateProfile.social;
+      roommateProfile.course = profession || roommateProfile.course;
+      roommateProfile.bio = bio || roommateProfile.bio;
+      roommateProfile.interests = Array.isArray(interests) ? interests : roommateProfile.interests;
+    }
+    try {
+      await ctx.persistRoommate ? ctx.persistRoommate(roommateProfile) : persistRoommate(roommateProfile);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to save roommate profile" });
+      return;
+    }
+    // Link roommate profile to flat
+    if (!flat.roommates.includes(roommateProfile.id)) {
+      flat.roommates.push(roommateProfile.id);
+      try {
+        await ctx.persistFlat ? ctx.persistFlat(flat) : persistFlat(flat);
+      } catch (error) {
+        res.status(500).json({ message: "Failed to update flat with roommate" });
+        return;
+      }
+    }
+    res.json({ ok: true, roommateId: roommateProfile.id });
+  });
+  // ...existing code...
+  // Allow student to delete their own flat listing
+  app.delete("/api/list/student/:flatId", async (req, res) => {
+    const flatId = String(req.params.flatId || "").trim();
+    const userId = String(req.query.userId || "").trim();
+    if (!flatId || !userId) {
+      res.status(400).json({ message: "flatId and userId are required" });
+      return;
+    }
+    const listingIndex = ctx.state.flats.findIndex((item) => item.id === flatId);
+    if (listingIndex === -1) {
+      res.status(404).json({ message: "Listing not found" });
+      return;
+    }
+    const listing = ctx.state.flats[listingIndex];
+    // Only allow if user is NOT owner role and is the ownerId of the flat
+    const user = ctx.state.users.get(userId);
+    if (!user || String(listing.ownerId || "") !== userId) {
+      res.status(403).json({ message: "You can delete only your own student listing" });
+      return;
+    }
+    const role = String(user.role || user.intent || "").toLowerCase();
+    if (role === "owner") {
+      res.status(403).json({ message: "Owners cannot delete student listings here" });
+      return;
+    }
+    ctx.state.flats.splice(listingIndex, 1);
+    delete ctx.state.chats[flatId];
+    delete ctx.state.flatMetrics[flatId];
+    try {
+      await ctx.deleteFlat(flatId);
+      await ctx.deleteChat(flatId);
+      await ctx.deleteFlatMetrics(flatId);
+    } catch (error) {
+      console.error("Failed to delete student listing:", error.message);
+    }
+    ctx.broadcastBrowseUpdate("student-listing-deleted");
+    res.json({ ok: true, deletedId: flatId });
+  });
 
   app.get("/api/health", (_req, res) => {
     res.json({
@@ -343,48 +503,59 @@ module.exports = function (app, ctx) {
     const minRent = toNumber(req.query.minRent, 0)
     const maxRent = toNumber(req.query.maxRent, Number.MAX_SAFE_INTEGER)
     const maxDistance = toNumber(req.query.maxDistance, Number.MAX_SAFE_INTEGER)
-    const cleanliness = toNumber(req.query.cleanliness, 0)
-    const socialLevel = toNumber(req.query.socialLevel, 0)
-    const studyHabits = toNumber(req.query.studyHabits, 0)
-    const interests = String(req.query.interests || "")
-      .split(",")
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean)
+    // If these are not present, set to undefined so filter always passes
+    const cleanliness = req.query.cleanliness ? toNumber(req.query.cleanliness, 0) : undefined;
+    const socialLevel = req.query.socialLevel ? toNumber(req.query.socialLevel, 0) : undefined;
+    const studyHabits = req.query.studyHabits ? toNumber(req.query.studyHabits, 0) : undefined;
+    const interests = req.query.interests ? String(req.query.interests).split(",").map((item) => item.trim().toLowerCase()).filter(Boolean) : [];
 
+    // Include both owner and student/renter flats
     const results = state.flats
-      .filter((flat) => isActiveOwnerListing(flat))
+      .filter((flat) => {
+        // Owner listing
+        if (isActiveOwnerListing(flat)) return true;
+        // Student/renter listing: user is not owner, but has a valid id and title
+        const ownerId = String(flat?.ownerId || "").trim();
+        const ownerUser = state.users.get(ownerId);
+        if (ownerUser) {
+          const normalizedRole = String(ownerUser.role || ownerUser.intent || "").toLowerCase();
+          if (normalizedRole !== "owner") return true;
+        }
+        return false;
+      })
       .map(enrichFlat)
       .filter((flat) => {
         const queryMatch =
-          !query || flat.title.toLowerCase().includes(query) || flat.location.address.toLowerCase().includes(query)
-        const typeMatch = flatType === "all" || flat.flatType === flatType
-        const rentMatch = flat.rent >= minRent && flat.rent <= maxRent
-        const distanceMatch = flat.distanceFromCampusKm <= maxDistance
+          !query || flat.title.toLowerCase().includes(query) || flat.location.address.toLowerCase().includes(query);
+        const typeMatch = flatType === "all" || flat.flatType === flatType;
+        const rentMatch = flat.rent >= minRent && flat.rent <= maxRent;
+        const distanceMatch = flat.distanceFromCampusKm <= maxDistance;
 
-        const roommateProfiles = flat.roommateProfiles || []
-        const personalityMatch =
-          cleanliness === 0 && socialLevel === 0 && studyHabits === 0
+        const roommateProfiles = flat.roommateProfiles || [];
+        // Only filter by personality if any of the filters are present
+        let personalityMatch = true;
+        if (cleanliness !== undefined || socialLevel !== undefined || studyHabits !== undefined) {
+          personalityMatch = roommateProfiles.length === 0
             ? true
-            : roommateProfiles.length === 0
-              ? true
-              : roommateProfiles.some(
-                (roommate) =>
-                  roommate.personality.cleanliness >= cleanliness &&
-                  roommate.personality.socialLevel >= socialLevel &&
-                  roommate.personality.studyHabits >= studyHabits,
-              )
+            : roommateProfiles.some((roommate) =>
+                (cleanliness === undefined || roommate.personality.cleanliness >= cleanliness) &&
+                (socialLevel === undefined || roommate.personality.socialLevel >= socialLevel) &&
+                (studyHabits === undefined || roommate.personality.studyHabits >= studyHabits)
+              );
+        }
 
-        const interestMatch =
-          interests.length === 0 ||
-          roommateProfiles.length === 0 ||
-          roommateProfiles.some((roommate) =>
-            roommate.interests.some((interest) => interests.includes(String(interest).toLowerCase())),
-          )
+        // Only filter by interests if interests are present
+        let interestMatch = true;
+        if (interests.length > 0) {
+          interestMatch = roommateProfiles.length === 0 || roommateProfiles.some((roommate) =>
+            roommate.interests.some((interest) => interests.includes(String(interest).toLowerCase()))
+          );
+        }
 
-        return queryMatch && typeMatch && rentMatch && distanceMatch && personalityMatch && interestMatch
-      })
+        return queryMatch && typeMatch && rentMatch && distanceMatch && personalityMatch && interestMatch;
+      });
 
-    res.json(results)
+    res.json(results);
   })
 
   app.get("/api/flats/:id", (req, res) => {
@@ -393,7 +564,48 @@ module.exports = function (app, ctx) {
       res.status(404).json({ message: "Flat not found" })
       return
     }
-    res.json(enrichFlat(flat))
+    // Compose roommatesInfo for compatibility with frontend
+    let roommatesInfo = [];
+    if (flat.flatType === "room-with-roommates" && Array.isArray(flat.roommates) && flat.roommates.length > 0) {
+      roommatesInfo = flat.roommates
+        .map(rmId => {
+          const rm = state.roommates.find(r => r.id === rmId);
+          if (!rm) return null;
+          let user = null;
+          if (rm.createdByUserId && state.users && typeof state.users.get === "function") {
+            user = state.users.get(rm.createdByUserId);
+          }
+          return {
+            id: rm.id,
+            name: rm.name || user?.name || "-",
+            email: user?.email || rm.email || "-",
+            age: rm.age || user?.age || "-",
+            gender: rm.gender || user?.gender || "-",
+            profession: rm.profession || rm.course || user?.profession || user?.course || "-",
+            course: rm.course || user?.course || "-",
+            schedule: rm.schedule || user?.schedule || "-",
+            cleanliness: rm.cleanliness || (rm.personality && rm.personality.cleanliness) || user?.cleanliness || "-",
+            habits: rm.habits || user?.habits || "-",
+            food: rm.food || user?.food || "-",
+            social: rm.social || user?.social || "-",
+            bio: rm.bio || user?.bio || "-",
+            interests: Array.isArray(rm.interests) && rm.interests.length > 0 ? rm.interests : (Array.isArray(user?.interests) ? user.interests : []),
+            preferredRentMax: rm.preferredRentMax,
+            maxOccupants: rm.maxOccupants,
+            moveInDate: rm.moveInDate,
+            address: rm.address || user?.address || "-",
+            location: rm.location,
+            institution: rm.institution,
+            images: Array.isArray(rm.images) ? rm.images : [],
+            virtualTourUrls: Array.isArray(rm.virtualTourUrls) ? rm.virtualTourUrls : [],
+            virtualTourUrl: rm.virtualTourUrl,
+            createdByUserId: rm.createdByUserId,
+            personality: rm.personality,
+          };
+        })
+        .filter(Boolean);
+    }
+    res.json({ ...enrichFlat(flat), roommatesInfo });
   })
 
   app.post("/api/flats/:id/view", async (req, res) => {
@@ -462,35 +674,43 @@ module.exports = function (app, ctx) {
   })
 
   app.get("/api/roommates", (req, res) => {
-    const query = String(req.query.q || "").trim().toLowerCase()
-    const maxRent = toNumber(req.query.maxRent, Number.MAX_SAFE_INTEGER)
-    const cleanliness = toNumber(req.query.cleanliness, 0)
-    const socialLevel = toNumber(req.query.socialLevel, 0)
-    const studyHabits = toNumber(req.query.studyHabits, 0)
-    const interest = String(req.query.interest || "").trim().toLowerCase()
+    const query = String(req.query.q || "").trim().toLowerCase();
+    const maxRent = toNumber(req.query.maxRent, Number.MAX_SAFE_INTEGER);
+    const cleanliness = req.query.cleanliness ? toNumber(req.query.cleanliness, 0) : undefined;
+    const socialLevel = req.query.socialLevel ? toNumber(req.query.socialLevel, 0) : undefined;
+    const studyHabits = req.query.studyHabits ? toNumber(req.query.studyHabits, 0) : undefined;
+    const interest = req.query.interest ? String(req.query.interest).trim().toLowerCase() : undefined;
 
     const results = state.roommates.filter((roommate) => {
       if (!isActiveRoommateListing(roommate)) {
-        return false
+        return false;
       }
 
       const queryMatch =
         !query ||
         roommate.name.toLowerCase().includes(query) ||
         roommate.course.toLowerCase().includes(query) ||
-        roommate.bio.toLowerCase().includes(query)
+        roommate.bio.toLowerCase().includes(query);
 
-      const rentMatch = roommate.preferredRentMax <= maxRent
-      const personalityMatch =
-        roommate.personality.cleanliness >= cleanliness &&
-        roommate.personality.socialLevel >= socialLevel &&
-        roommate.personality.studyHabits >= studyHabits
+      const rentMatch = roommate.preferredRentMax <= maxRent;
 
-      const interestMatch =
-        !interest || roommate.interests.some((item) => String(item).toLowerCase().includes(interest))
+      // Only filter by personality if any of the filters are present
+      let personalityMatch = true;
+      if (cleanliness !== undefined || socialLevel !== undefined || studyHabits !== undefined) {
+        personalityMatch =
+          (cleanliness === undefined || roommate.personality.cleanliness >= cleanliness) &&
+          (socialLevel === undefined || roommate.personality.socialLevel >= socialLevel) &&
+          (studyHabits === undefined || roommate.personality.studyHabits >= studyHabits);
+      }
 
-      return queryMatch && rentMatch && personalityMatch && interestMatch
-    })
+      // Only filter by interest if present
+      let interestMatch = true;
+      if (interest) {
+        interestMatch = roommate.interests.some((item) => String(item).toLowerCase().includes(interest));
+      }
+
+      return queryMatch && rentMatch && personalityMatch && interestMatch;
+    });
 
     res.json(results.map(enrichRoommate))
   })
@@ -533,6 +753,11 @@ module.exports = function (app, ctx) {
 
     const listingVirtualTours = normalizeTourUrls(payload.virtualTourUrls || payload.virtualTourUrl)
 
+    // Only accept public URLs for images (Cloudinary or user input)
+    const publicImageUrls = Array.isArray(payload.images)
+      ? payload.images.filter((url) => /^https?:\/\//i.test(url))
+      : [];
+
     const listing = {
       id: makeId("flat"),
       title: String(payload.title),
@@ -548,13 +773,14 @@ module.exports = function (app, ctx) {
           .split(",")
           .map((item) => item.trim())
           .filter(Boolean),
-      images: normalizeImageUrls(payload.images),
+      images: publicImageUrls,
       ownerId: String(payload.ownerId || makeId("owner")),
       ownerName: String(payload.ownerName),
       ownerEmail: String(payload.ownerEmail || "").trim().toLowerCase() || null,
-      roommates: [],
+      roommates: String(payload.flatType || "room-only") === "room-with-roommates" ? [] : [], // Always start empty for shared
       availableFrom: String(payload.availableFrom || new Date().toISOString().slice(0, 10)),
-      flatType: "room-only",
+      flatType: String(payload.flatType || "room-only"),
+      maxOccupants: Math.max(1, toNumber(payload.maxOccupants, 1)),
       virtualTourUrls: listingVirtualTours,
       virtualTourUrl: listingVirtualTours[0] || null,
     }
@@ -597,6 +823,28 @@ module.exports = function (app, ctx) {
     res.status(201).json(enrichFlat(listing))
   })
 
+  // Get student flat listing for a user (for "student" role, not owner)
+  app.get("/api/list/student/:userId", (req, res) => {
+    const userId = String(req.params.userId || "").trim();
+    if (!userId) {
+      res.status(400).json({ message: "userId is required" });
+      return;
+    }
+
+    // A student flat listing is a flat where the user is NOT an owner, but is the "ownerId" of the flat
+    const listings = state.flats
+      .filter((item) => String(item.ownerId || "") === userId)
+      .filter((item) => {
+        const ownerUser = state.users.get(userId);
+        if (!ownerUser) return false;
+        const role = String(ownerUser.role || ownerUser.intent || "").toLowerCase();
+        return role !== "owner";
+      })
+      .map(enrichFlat);
+
+    res.json(listings);
+  });
+
   app.get("/api/list/owner/:ownerId", (req, res) => {
     const ownerId = String(req.params.ownerId || "").trim()
     if (!ownerId) {
@@ -605,7 +853,7 @@ module.exports = function (app, ctx) {
     }
 
     const listings = state.flats
-      .filter((item) => String(item.ownerId || "") === ownerId && isActiveOwnerListing(item))
+      .filter((item) => String(item.ownerId || "") === ownerId)
       .map(enrichFlat)
     res.json(listings)
   })
@@ -634,7 +882,7 @@ module.exports = function (app, ctx) {
     listing.title = String(payload.title || listing.title)
     listing.description = String(payload.description || listing.description)
     listing.rent = toNumber(payload.rent, listing.rent)
-    listing.flatType = "room-only"
+    listing.flatType = payload.flatType || "room-only"
     listing.availableFrom = String(payload.availableFrom || listing.availableFrom)
     listing.amenities = Array.isArray(payload.amenities)
       ? payload.amenities
@@ -747,7 +995,10 @@ module.exports = function (app, ctx) {
       return
     }
 
-    const normalizedImages = normalizeImageUrls(payload.images)
+    // Only accept public URLs for images (Cloudinary or user input)
+    const publicImageUrls = Array.isArray(payload.images)
+      ? payload.images.filter((url) => /^https?:\/\//i.test(url))
+      : [];
     const normalizedTourUrls = normalizeTourUrls(payload.virtualTourUrls || payload.virtualTourUrl)
     const normalizedTourUrl = normalizedTourUrls[0] || null
     const maxOccupants = Math.max(1, toNumber(payload.maxOccupants, 1))
@@ -755,8 +1006,8 @@ module.exports = function (app, ctx) {
     const institutionCoordinates = toOptionalCoordinatePair(payload.institutionLat, payload.institutionLng)
     const institutionAddress = String(payload.institutionAddress || listingUser?.university || "").trim()
 
-    if (normalizedImages.length < 2) {
-      res.status(400).json({ message: "At least 2 normal images are required" })
+    if (publicImageUrls.length < 2) {
+      res.status(400).json({ message: "At least 2 normal images are required (public URLs only)" })
       return
     }
 
@@ -793,7 +1044,7 @@ module.exports = function (app, ctx) {
         address: institutionAddress,
         coordinates: institutionCoordinates,
       },
-      images: normalizedImages,
+      images: publicImageUrls,
       virtualTourUrls: normalizedTourUrls,
       virtualTourUrl: normalizedTourUrl,
       createdByUserId,
@@ -1264,9 +1515,19 @@ module.exports = function (app, ctx) {
       }
 
       const metrics = getFlatMetrics(flatId)
-      if (metrics.purchasedByUserId) {
+      // Only restrict 'sold' for single rooms, allow multiple bookings for shared rooms
+      if (flat.flatType !== "room-with-roommates" && metrics.purchasedByUserId) {
         res.status(409).json({ message: "This flat is already sold/booked" })
         return
+      }
+      // For shared rooms, block only if maxOccupants reached
+      if (flat.flatType === "room-with-roommates") {
+        const currentRoommates = Array.isArray(flat.roommates) ? flat.roommates.length : 0;
+        const maxOccupants = flat.maxOccupants || 1;
+        if (currentRoommates >= maxOccupants) {
+          res.status(409).json({ message: "All seats in this shared flat are filled" })
+          return;
+        }
       }
 
       const purchasedFlatId = getPurchasedFlatIdByUser(buyerUserId)
@@ -1354,7 +1615,8 @@ module.exports = function (app, ctx) {
       return
     }
 
-    const generatedSignature = crypto
+    const nodeCrypto = require("crypto");
+    const generatedSignature = nodeCrypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
       .update(`${orderId}|${paymentId}`)
       .digest("hex")
@@ -1405,6 +1667,63 @@ module.exports = function (app, ctx) {
           metrics.purchasedByUserId = buyerUserId
           metrics.purchasedAt = new Date().toISOString()
           state.flatMetrics[flatId] = metrics
+
+          // PATCH: Add userId to flat.roommates for shared rooms
+          if (flat.flatType === "room-with-roommates") {
+            if (!Array.isArray(flat.roommates)) flat.roommates = [];
+            // Always get or create roommate profile for this user
+            let roommateProfile = state.roommates.find(rm => String(rm.createdByUserId) === String(buyerUserId));
+            const buyerUser = state.users.get(buyerUserId);
+            if (!roommateProfile) {
+              // Create a new roommate profile for the student
+              roommateProfile = {
+                id: makeId("rm"),
+                name: buyerUser?.name || "Student",
+                age: buyerUser?.age || 20,
+                course: buyerUser?.course || "",
+                bio: buyerUser?.bio || "",
+                preferredRentMax: 0,
+                maxOccupants: 1,
+                moveInDate: new Date().toISOString().slice(0, 10),
+                interests: Array.isArray(buyerUser?.interests) ? buyerUser.interests : [],
+                personality: buyerUser?.personality || { cleanliness: 5, socialLevel: 5, studyHabits: 5 },
+                address: buyerUser?.address || "",
+                location: { address: buyerUser?.address || "", coordinates: [] },
+                institution: { address: buyerUser?.university || "", coordinates: [] },
+                images: [],
+                virtualTourUrls: [],
+                virtualTourUrl: null,
+                createdByUserId: buyerUserId,
+              };
+              state.roommates.unshift(roommateProfile);
+            } else {
+              // Always update roommate profile with latest user info
+              roommateProfile.name = buyerUser?.name || roommateProfile.name;
+              roommateProfile.age = buyerUser?.age || roommateProfile.age;
+              roommateProfile.course = buyerUser?.course || roommateProfile.course;
+              roommateProfile.bio = buyerUser?.bio || roommateProfile.bio;
+              roommateProfile.interests = Array.isArray(buyerUser?.interests) ? buyerUser.interests : roommateProfile.interests;
+              roommateProfile.personality = buyerUser?.personality || roommateProfile.personality;
+              roommateProfile.address = buyerUser?.address || roommateProfile.address;
+              roommateProfile.location = { address: buyerUser?.address || roommateProfile.address || "", coordinates: [] };
+              roommateProfile.institution = { address: buyerUser?.university || roommateProfile.institution?.address || "", coordinates: [] };
+              roommateProfile.createdByUserId = buyerUserId;
+            }
+            try {
+              await persistRoommate(roommateProfile);
+            } catch (error) {
+              console.error("Failed to persist roommate profile after booking:", error.message);
+            }
+            // Always add roommate profile ID to flat.roommates and persist flat
+            if (!flat.roommates.includes(roommateProfile.id)) {
+              flat.roommates.push(roommateProfile.id);
+            }
+            try {
+              await persistFlat(flat);
+            } catch (error) {
+              console.error("Failed to persist updated flat roommates after booking:", error.message);
+            }
+          }
 
           try {
             await persistFlatMetrics(flatId)
@@ -1701,5 +2020,5 @@ module.exports = function (app, ctx) {
     })
   })
 
-
-};
+}
+;
