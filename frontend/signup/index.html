@@ -36,11 +36,13 @@
       <div class="login-modern-card">
         <h1 class="login-title">Create your<br>account</h1>
         <div class="login-subtext">Or <a href="/login">sign in to existing account</a></div>
-        <form class="auth-modern-form" autocomplete="off">
+        <p id="signupStatus" class="auth-status" style="color:red; text-align:center;"></p>
+        <form id="signupForm" class="auth-modern-form" autocomplete="off">
           <div class="login-role-group">
             <button type="button" class="role-btn active" id="role-student">Student</button>
             <button type="button" class="role-btn" id="role-owner">Property Owner</button>
           </div>
+          <input type="hidden" id="intentInput" name="intent" value="seeker" />
           <label>Full Name
             <input type="text" name="name" required placeholder="Your Name" />
           </label>
@@ -53,6 +55,9 @@
           <label>Confirm Password
             <input type="password" name="confirmPassword" required placeholder="Confirm password" />
           </label>
+          <label id="universityLabel">University / College
+            <input type="text" name="university" placeholder="Enter your university name" />
+          </label>
           <button class="auth-modern-btn login-signin-btn" type="submit">SIGN UP</button>
         </form>
       </div>
@@ -62,17 +67,21 @@
       document.addEventListener('DOMContentLoaded', function() {
         const studentBtn = document.getElementById('role-student');
         const ownerBtn = document.getElementById('role-owner');
+        const intentInput = document.getElementById('intentInput');
         studentBtn.addEventListener('click', function() {
           studentBtn.classList.add('active');
           ownerBtn.classList.remove('active');
+          if (intentInput) intentInput.value = 'seeker';
         });
         ownerBtn.addEventListener('click', function() {
           ownerBtn.classList.add('active');
           studentBtn.classList.remove('active');
+          if (intentInput) intentInput.value = 'owner';
         });
       });
     </script>
-    <footer class="site-footer">
+    <script src="/js/app.js"></script>
+    <script src="/js/signup.js"></script>
     <footer class="footer glass-footer">
       <div class="footer-inner">
         <div class="footer-brand">

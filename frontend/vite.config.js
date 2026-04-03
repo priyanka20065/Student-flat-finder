@@ -44,8 +44,8 @@ export default defineConfig({
     plugins: [cleanUrlPlugin()],
     server: {
         proxy: {
-            '/api': 'http://localhost:4001',
-            '/uploads': 'http://localhost:4001',
+            '/api': 'http://localhost:4000',
+            '/uploads': 'http://localhost:4000',
         },
     },
     build: {

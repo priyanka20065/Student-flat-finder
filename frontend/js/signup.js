@@ -50,6 +50,8 @@ signupForm.addEventListener("submit", async (event) => {
   signupForm.querySelectorAll('input[name="amenities"]:checked').forEach(cb => amenities.push(cb.value));
   const payload = Object.fromEntries(formData.entries());
   payload.amenities = amenities;
+  payload.preferredRoomType = payload.intent === "owner" ? null : payload.preferredRoomType || "room-only";
+  payload.university = payload.intent === "owner" ? null : payload.university || "Not Specified";
 
   try {
     const user = await window.AppUtils.api("/api/auth/signup", {
