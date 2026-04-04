@@ -1899,20 +1899,24 @@ module.exports = function (app, ctx) {
           const listingTitle = String(flat.title || "your listing").trim() || "your listing"
 
           if (buyerEmail) {
-            await sendEmail({
-              to: buyerEmail,
-              subject: "Booking confirmed on Student Flat Finder ✅",
-              text: `Hi ${buyerName},\n\nYour payment is verified and your room booking for \"${listingTitle}\" is confirmed.\n\n- Team Student Flat Finder`,
-              html: `<p>Hi <strong>${buyerName}</strong>,</p><p>Your payment is verified and your room booking for <strong>${listingTitle}</strong> is confirmed.</p><p>— Team Student Flat Finder</p>`,
+            setImmediate(() => {
+              void sendEmail({
+                to: buyerEmail,
+                subject: "Booking confirmed on Student Flat Finder ✅",
+                text: `Hi ${buyerName},\n\nYour payment is verified and your room booking for "${listingTitle}" is confirmed.\n\n- Team Student Flat Finder`,
+                html: `<p>Hi <strong>${buyerName}</strong>,</p><p>Your payment is verified and your room booking for <strong>${listingTitle}</strong> is confirmed.</p><p>— Team Student Flat Finder</p>`,
+              })
             })
           }
 
           if (ownerEmail && ownerEmail !== buyerEmail) {
-            await sendEmail({
-              to: ownerEmail,
-              subject: "Your listing has been booked on Student Flat Finder",
-              text: `Hi,\n\n${buyerName} has successfully booked your listing \"${listingTitle}\".\n\n- Team Student Flat Finder`,
-              html: `<p>Hi,</p><p><strong>${buyerName}</strong> has successfully booked your listing <strong>${listingTitle}</strong>.</p><p>— Team Student Flat Finder</p>`,
+            setImmediate(() => {
+              void sendEmail({
+                to: ownerEmail,
+                subject: "Your listing has been booked on Student Flat Finder",
+                text: `Hi,\n\n${buyerName} has successfully booked your listing "${listingTitle}".\n\n- Team Student Flat Finder`,
+                html: `<p>Hi,</p><p><strong>${buyerName}</strong> has successfully booked your listing <strong>${listingTitle}</strong>.</p><p>— Team Student Flat Finder</p>`,
+              })
             })
           }
         }
@@ -1984,20 +1988,24 @@ module.exports = function (app, ctx) {
           const listingName = String(roommate.name || "roommate listing").trim() || "roommate listing"
 
           if (buyerEmail) {
-            await sendEmail({
-              to: buyerEmail,
-              subject: "Roommate booking confirmed on Student Flat Finder ✅",
-              text: `Hi ${buyerName},\n\nYour payment is verified and your booking for roommate listing \"${listingName}\" is confirmed.\n\n- Team Student Flat Finder`,
-              html: `<p>Hi <strong>${buyerName}</strong>,</p><p>Your payment is verified and your booking for roommate listing <strong>${listingName}</strong> is confirmed.</p><p>— Team Student Flat Finder</p>`,
+            setImmediate(() => {
+              void sendEmail({
+                to: buyerEmail,
+                subject: "Roommate booking confirmed on Student Flat Finder ✅",
+                text: `Hi ${buyerName},\n\nYour payment is verified and your booking for roommate listing "${listingName}" is confirmed.\n\n- Team Student Flat Finder`,
+                html: `<p>Hi <strong>${buyerName}</strong>,</p><p>Your payment is verified and your booking for roommate listing <strong>${listingName}</strong> is confirmed.</p><p>— Team Student Flat Finder</p>`,
+              })
             })
           }
 
           if (listingOwnerEmail && listingOwnerEmail !== buyerEmail) {
-            await sendEmail({
-              to: listingOwnerEmail,
-              subject: "A student joined your roommate listing",
-              text: `Hi,\n\n${buyerName} has successfully joined your roommate listing \"${listingName}\".\n\n- Team Student Flat Finder`,
-              html: `<p>Hi,</p><p><strong>${buyerName}</strong> has successfully joined your roommate listing <strong>${listingName}</strong>.</p><p>— Team Student Flat Finder</p>`,
+            setImmediate(() => {
+              void sendEmail({
+                to: listingOwnerEmail,
+                subject: "A student joined your roommate listing",
+                text: `Hi,\n\n${buyerName} has successfully joined your roommate listing "${listingName}".\n\n- Team Student Flat Finder`,
+                html: `<p>Hi,</p><p><strong>${buyerName}</strong> has successfully joined your roommate listing <strong>${listingName}</strong>.</p><p>— Team Student Flat Finder</p>`,
+              })
             })
           }
         }
