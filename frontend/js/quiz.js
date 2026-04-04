@@ -3,6 +3,7 @@ const quizStatus = document.getElementById("quizStatus")
 const recommendations = document.getElementById("recommendations")
 
 const currentUser = window.AppUtils.ensureLoggedIn("/login")
+let currentProfile = null
 
 function prefillQuizForm(userProfile) {
   if (!quizForm || !userProfile) {
@@ -21,6 +22,21 @@ function prefillQuizForm(userProfile) {
   setField("socialLevel", Number(userProfile.personality?.socialLevel || 5))
   setField("studyHabits", Number(userProfile.personality?.studyHabits || 5))
   setField("interests", Array.isArray(userProfile.interests) ? userProfile.interests.join(", ") : "")
+  setField("budget", Number(userProfile.preferredRentMax || 15000))
+  const roomTypeInput = quizForm.querySelector(
+    `input[name="roomType"][value="${
+      String(userProfile.preferredRoomType || "").toLowerCase() === "room-with-roommates" ? "shared-room" : "room-only"
+    }"]`,
+  )
+  if (roomTypeInput) {
+    roomTypeInput.checked = true
+  }
+
+  const preferredAmenities = Array.isArray(userProfile.preferredAmenities) ? userProfile.preferredAmenities : []
+  quizForm.querySelectorAll('input[name="amenities"]').forEach((checkbox) => {
+    checkbox.checked = preferredAmenities.includes(checkbox.value)
+  })
+  setField("houseRules", String(userProfile.houseRulesPreference || ""))
 }
 
 if (currentUser) {
@@ -29,6 +45,7 @@ if (currentUser) {
   window.AppUtils
     .api(`/api/profile/${currentUser.id}`)
     .then((profile) => {
+      currentProfile = profile
       prefillQuizForm(profile)
       if (onboardingMode) {
         quizStatus.textContent = "Complete your preferences to get personalized room matches."
@@ -57,6 +74,15 @@ if (currentUser) {
       roomType,
       amenities,
       houseRules,
+      interests: Array.isArray(currentProfile?.interests)
+        ? currentProfile.interests
+        : Array.isArray(currentUser?.interests)
+          ? currentUser.interests
+          : [],
+      cleanliness: Number(currentProfile?.personality?.cleanliness || currentUser?.personality?.cleanliness || 5),
+      socialLevel: Number(currentProfile?.personality?.socialLevel || currentUser?.personality?.socialLevel || 5),
+      studyHabits: Number(currentProfile?.personality?.studyHabits || currentUser?.personality?.studyHabits || 5),
+      university: String(currentProfile?.university || currentUser?.university || "").trim(),
     }
 
     try {
@@ -66,13 +92,11 @@ if (currentUser) {
       })
 
       const updatedUser = {
-        ...currentUser,
-        interests: payload.interests,
-        personality: {
-          cleanliness: payload.cleanliness,
-          socialLevel: payload.socialLevel,
-          studyHabits: payload.studyHabits,
-        },
+        ...(currentProfile || currentUser),
+        preferredRoomType: roomType === "shared-room" ? "room-with-roommates" : "room-only",
+        preferredRentMax: budget,
+        preferredAmenities: amenities,
+        houseRulesPreference: houseRules,
       }
 
       await window.AppUtils.api(`/api/profile/${currentUser.id}`, {

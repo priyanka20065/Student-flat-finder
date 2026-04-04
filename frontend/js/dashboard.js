@@ -2,6 +2,7 @@ const currentUser = window.AppUtils.ensureLoggedIn("/login")
 const dashboardStatus = document.getElementById("dashboardStatus")
 const welcomeTitle = document.getElementById("welcomeTitle")
 const activityList = document.getElementById("activityList")
+const dashboardActivityCard = document.getElementById("dashboardActivityCard")
 const profileRole = document.getElementById("profileRole")
 const memberSince = document.getElementById("memberSince")
 const subscriptionStatus = document.getElementById("subscriptionStatus")
@@ -217,11 +218,49 @@ async function loadDashboard() {
       preferredRoomType: profile.preferredRoomType || currentUser.preferredRoomType,
     });
     const isOwner = dashboardMode === "owner";
+    if (dashboardActivityCard) {
+      dashboardActivityCard.classList.toggle("hidden", !isOwner)
+    }
     let data = [];
     if (isOwner) {
       data = await window.AppUtils.api(`/api/list/owner/${encodeURIComponent(currentUser.id)}`);
     } else {
-      data = await window.AppUtils.api("/api/flats");
+      const quizPayload = {
+        budget: Number(profile.preferredRentMax || 0),
+        roomType:
+          String(profile.preferredRoomType || "").toLowerCase() === "room-with-roommates"
+            ? "shared-room"
+            : "room-only",
+        amenities: Array.isArray(profile.preferredAmenities) ? profile.preferredAmenities : [],
+        houseRules: String(profile.houseRulesPreference || ""),
+        interests: Array.isArray(profile.interests) ? profile.interests : [],
+        cleanliness: Number(profile.personality?.cleanliness || 5),
+        socialLevel: Number(profile.personality?.socialLevel || 5),
+        studyHabits: Number(profile.personality?.studyHabits || 5),
+        university: String(profile.university || "").trim(),
+      }
+
+      try {
+        const matchResult = await window.AppUtils.api("/api/quiz/match", {
+          method: "POST",
+          body: JSON.stringify(quizPayload),
+        })
+        data = Array.isArray(matchResult?.recommendations) ? matchResult.recommendations : []
+      } catch {
+        const flatType =
+          String(profile.preferredRoomType || "").toLowerCase() === "room-with-roommates"
+            ? "room-with-roommates"
+            : "room-only"
+        const fallbackParams = new URLSearchParams({
+          flatType,
+          maxRent: String(Number(profile.preferredRentMax || 0) || "999999"),
+          interests: Array.isArray(profile.interests) ? profile.interests.join(",") : "",
+          cleanliness: String(Number(profile.personality?.cleanliness || 0) || ""),
+          socialLevel: String(Number(profile.personality?.socialLevel || 0) || ""),
+          studyHabits: String(Number(profile.personality?.studyHabits || 0) || ""),
+        })
+        data = await window.AppUtils.api(`/api/flats?${fallbackParams.toString()}`)
+      }
     }
 
     welcomeTitle.textContent = `Welcome back, ${profile.name || "Student"}!`
@@ -229,11 +268,13 @@ async function loadDashboard() {
     memberSince.textContent = new Date().toLocaleDateString("en-IN")
     subscriptionStatus.textContent = profile.subscription?.active ? profile.subscription.plan : "Free"
 
-    activityList.innerHTML = `
-      <li>👁️ Profile Views <strong>${Number(activity?.profileViews || 0)}</strong></li>
-      <li>💚 Saved Flats <strong>${Number(activity?.savedFlats || 0)}</strong></li>
-      <li>💬 Messages <strong>${Number(activity?.messages || 0)}</strong></li>
-    `
+    if (isOwner && activityList) {
+      activityList.innerHTML = `
+        <li>👁️ Profile Views <strong>${Number(activity?.profileViews || 0)}</strong></li>
+        <li>💚 Saved Flats <strong>${Number(activity?.savedFlats || 0)}</strong></li>
+        <li>💬 Messages <strong>${Number(activity?.messages || 0)}</strong></li>
+      `
+    }
 
     if (!data.length) {
       dashboardRecommendations.innerHTML = isOwner
@@ -259,13 +300,13 @@ async function loadDashboard() {
       dashboardRecommendations.innerHTML = data.map((flat) => buildRecommendationCard(flat, true)).join("");
     } else {
       if (titleNode) {
-        titleNode.textContent = "Owner Listings";
+        titleNode.textContent = "Matched Listings";
       }
       if (subtitleNode) {
         subtitleNode.textContent = "Student dashboard";
       }
       if (descNode) {
-        descNode.textContent = "All owner-listed flats are shown here";
+        descNode.textContent = "Recommendations based on your onboarding answers";
       }
       dashboardRecommendations.innerHTML = data.map((flat) => buildRecommendationCard(flat, false)).join("");
     }

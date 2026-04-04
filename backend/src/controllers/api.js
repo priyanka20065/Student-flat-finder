@@ -96,13 +96,9 @@ module.exports = function (app, ctx) {
       return
     }
 
-    if (intent === "seeker" && !preferredRoomType) {
-      res.status(400).json({ message: "preferredRoomType is required for seekers" })
-      return
-    }
-
-    if (intent === "seeker" && String(preferredRoomType || "") === "room-only" && !String(university || "").trim()) {
-      res.status(400).json({ message: "University / College name is required for normal students" })
+    const normalizedIntent = String(intent || "").trim().toLowerCase()
+    if (normalizedIntent !== "owner" && !String(university || "").trim()) {
+      res.status(400).json({ message: "college/university is required for student signup" })
       return
     }
 
@@ -121,7 +117,7 @@ module.exports = function (app, ctx) {
       password: String(password),
       role: intent === "owner" ? "owner" : "roommate",
       intent,
-      preferredRoomType: preferredRoomType || null,
+      preferredRoomType: intent === "owner" ? null : String(preferredRoomType || "room-only"),
       university: String(university || "").trim(),
       interests: Array.isArray(interests)
         ? interests.map((item) => String(item).trim()).filter(Boolean)
@@ -151,7 +147,6 @@ module.exports = function (app, ctx) {
       console.error("Failed to persist user:", error.message)
     }
 
-    const normalizedIntent = String(intent || "").trim().toLowerCase()
     const normalizedPreferredRoomType = String(preferredRoomType || "").trim().toLowerCase()
     const welcomeUserType =
       normalizedIntent === "owner"

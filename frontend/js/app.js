@@ -402,7 +402,6 @@ if (path === "/login" || path === "/signup") {
   document.body.classList.add("auth-screen")
 }
 applyUnifiedNav()
-injectGlobalFooter()
 
 window.AppUtils = {
   formatINR,

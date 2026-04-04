@@ -43,10 +43,6 @@ function isAppGeneratedListingId(id, prefix) {
 }
 
 function isActiveOwnerListing(flat) {
-  if (!isAppGeneratedListingId(flat?.id, "flat")) {
-    return false
-  }
-
   const ownerId = String(flat?.ownerId || "").trim()
   if (!ownerId) {
     return false

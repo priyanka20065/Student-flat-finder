@@ -14,13 +14,18 @@
   margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 0.5em 2em;
 }
 .nav-profile {
   margin-left: 1.5em;
   display: flex;
   align-items: center;
+}
+
+/* Hide header profile icon block on all pages */
+.nav-profile {
+  display: none !important;
 }
 .profile-icon svg {
   display: block;
@@ -40,6 +45,17 @@
   padding: 1.5em 0 1em 0;
   margin-top: 3em;
 }
+
+/* Show the shared glass footer on all pages */
+footer.footer.glass-footer {
+  display: block !important;
+}
+
+/* Avoid duplicate footer on auth pages when global footer injection runs */
+body.auth-modern-bg footer.site-footer {
+  display: none !important;
+}
+
 .footer-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -626,7 +642,8 @@ body.auth-screen {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: center;
+  flex: 1;
 }
 
 .nav a {
@@ -646,6 +663,11 @@ body.auth-screen {
   font-weight: 700;
   color: var(--primary);
   font-size: 1.3rem;
+}
+
+/* Hide the header brand/logo entirely */
+.nav .brand {
+  display: none !important;
 }
 
 .hero {
@@ -1057,7 +1079,9 @@ body {
   background: linear-gradient(to right, #2563eb, #7c3aed);
   color: #fff;
   padding: 3rem 1rem;
-  margin-top: 2rem;
+  max-width: 1100px;
+  margin: 2rem auto 0;
+  border-radius: 16px;
 }
 
 .premium-inner {
@@ -1231,6 +1255,19 @@ body {
   padding: 0 1rem;
 }
 
+.map-distance-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.45rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #dbeafe;
+  background: rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+}
+
 .map-sidebar {
   max-height: 75vh;
   overflow: auto;
@@ -1288,8 +1325,102 @@ body {
   gap: 0.75rem;
 }
 
+.map-route-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.map-route-cell {
+  padding: 0.85rem 0.95rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.map-route-cell h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.98rem;
+  color: var(--text-heading);
+}
+
+.map-route-cell p {
+  margin: 0;
+}
+
+.map-route-cell input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--text);
+  padding: 0.55rem 0.7rem;
+  font-size: 0.95rem;
+}
+
+.map-route-cell input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.map-meta {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.map-meta #selectedDistance {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.map-frame {
+  width: 100%;
+  min-height: 560px;
+  border: 0;
+  border-radius: 14px;
+  background: #0f172a;
+}
+
 .map-meta {
   padding: 0.9rem;
+}
+
+.map-why {
+  max-width: 1200px;
+  margin: 1rem auto 0;
+  padding: 1.25rem 1.25rem 1.4rem;
+}
+
+.map-why h2 {
+  margin: 0 0 0.9rem;
+  color: var(--text-heading);
+  font-size: 1.35rem;
+}
+
+.map-why-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.map-why-grid article {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+.map-why-grid h3 {
+  margin: 0 0 0.5rem;
+  color: var(--primary);
+  font-size: 1.05rem;
+}
+
+.map-why-grid p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .map-meta h2 {
@@ -1741,6 +1872,11 @@ body {
   background: #172a46;
   color: #fff;
   margin-top: 3rem;
+}
+
+/* Hide the injected global footer block across all pages */
+footer.site-footer {
+  display: none !important;
 }
 
 .footer-wrap {
@@ -2569,6 +2705,10 @@ body {
   }
 
   .map-page {
+    grid-template-columns: 1fr;
+  }
+
+  .map-route-meta {
     grid-template-columns: 1fr;
   }
 

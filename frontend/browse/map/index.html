@@ -32,6 +32,24 @@
       </div>
     </section>
 
+    <section class="map-why card glass-card page-wide">
+      <h2>Why this page exists</h2>
+      <div class="map-why-grid">
+        <article>
+          <h3>Compare nearby options</h3>
+          <p>See all listings on one map and quickly compare neighborhoods, streets, and nearby landmarks.</p>
+        </article>
+        <article>
+          <h3>Route from your start point</h3>
+          <p>Enter your college or any custom address to preview the route directly to the selected flat in the iframe.</p>
+        </article>
+        <article>
+          <h3>Decide by commute time</h3>
+          <p>Estimate practical travel before contacting the owner, so your shortlist is based on daily commute reality.</p>
+        </article>
+      </div>
+    </section>
+
     <main class="map-page page-wide">
       <aside class="map-sidebar list card glass-card">
         <label class="map-search-label">
@@ -43,11 +61,15 @@
       </aside>
 
       <section class="map-panel card glass-card">
-        <div class="map-meta">
-          <h2 id="selectedTitle">Select a listing</h2>
-          <p class="muted" id="selectedAddress">-</p>
-          <p class="muted" id="selectedRent">-</p>
-          <a id="openDirections" class="btn btn-secondary small-btn" href="#" target="_blank" rel="noreferrer">Open in Google Maps</a>
+        <div class="map-route-meta">
+          <article class="map-route-cell">
+            <h3>Flat Address</h3>
+            <p id="routeFlatAddress" class="muted">-</p>
+          </article>
+          <article class="map-route-cell">
+            <h3>Student College / Start Address</h3>
+            <input id="routeOriginInput" type="text" placeholder="Type college or any address" />
+          </article>
         </div>
         <iframe
           id="mapFrame"

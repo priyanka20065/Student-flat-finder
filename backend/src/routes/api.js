@@ -273,13 +273,9 @@ module.exports = function (app, ctx) {
       return
     }
 
-    if (intent === "seeker" && !preferredRoomType) {
-      res.status(400).json({ message: "preferredRoomType is required for seekers" })
-      return
-    }
-
-    if (intent === "seeker" && String(preferredRoomType || "") === "room-only" && !String(university || "").trim()) {
-      res.status(400).json({ message: "University / College name is required for normal students" })
+    const normalizedIntent = String(intent || "").trim().toLowerCase()
+    if (normalizedIntent !== "owner" && !String(university || "").trim()) {
+      res.status(400).json({ message: "college/university is required for student signup" })
       return
     }
 
@@ -298,7 +294,7 @@ module.exports = function (app, ctx) {
       password: String(password),
       role: intent === "owner" ? "owner" : "roommate",
       intent,
-      preferredRoomType: preferredRoomType || null,
+      preferredRoomType: intent === "owner" ? null : String(preferredRoomType || "room-only"),
       university: String(university || "").trim(),
       interests: Array.isArray(interests)
         ? interests.map((item) => String(item).trim()).filter(Boolean)
@@ -328,7 +324,6 @@ module.exports = function (app, ctx) {
       console.error("Failed to persist user:", error.message)
     }
 
-    const normalizedIntent = String(intent || "").trim().toLowerCase()
     const normalizedPreferredRoomType = String(preferredRoomType || "").trim().toLowerCase()
     const welcomeUserType =
       normalizedIntent === "owner"
@@ -417,16 +412,6 @@ module.exports = function (app, ctx) {
     }
 
     const payload = req.body || {}
-    const isOwner = String(user.role || user.intent || "").toLowerCase() === "owner"
-    const preferredRoomType = String(user.preferredRoomType || payload.preferredRoomType || "").toLowerCase()
-    const isNormalStudent = !isOwner && preferredRoomType === "room-only"
-
-    const nextUniversity = payload.university ?? user.university ?? ""
-    if (isNormalStudent && !String(nextUniversity || "").trim()) {
-      res.status(400).json({ message: "University / College name is required for normal students" })
-      return
-    }
-
     user.name = payload.name ?? user.name
     user.phone = payload.phone ?? user.phone ?? ""
     user.university = payload.university ?? user.university ?? ""
@@ -434,6 +419,24 @@ module.exports = function (app, ctx) {
     user.year = payload.year ?? user.year ?? ""
     user.bio = payload.bio ?? user.bio
     user.interests = Array.isArray(payload.interests) ? payload.interests : user.interests
+    if (payload.preferredRoomType !== undefined) {
+      const nextPreferredRoomType = String(payload.preferredRoomType || "").trim().toLowerCase()
+      user.preferredRoomType = nextPreferredRoomType || user.preferredRoomType || "room-only"
+    }
+    if (payload.preferredRentMax !== undefined) {
+      user.preferredRentMax = Math.max(0, toNumber(payload.preferredRentMax, toNumber(user.preferredRentMax, 0)))
+    }
+    if (payload.preferredAmenities !== undefined) {
+      user.preferredAmenities = Array.isArray(payload.preferredAmenities)
+        ? payload.preferredAmenities.map((item) => String(item).trim()).filter(Boolean)
+        : String(payload.preferredAmenities || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+    }
+    if (payload.houseRulesPreference !== undefined) {
+      user.houseRulesPreference = String(payload.houseRulesPreference || "").trim()
+    }
 
     const normalizedRole = String(user.role || user.intent || "").toLowerCase()
     if (normalizedRole === "owner" && payload.ownerProfile) {
@@ -514,14 +517,12 @@ module.exports = function (app, ctx) {
       .filter((flat) => {
         // Owner listing
         if (isActiveOwnerListing(flat)) return true;
-        // Student/renter listing: user is not owner, but has a valid id and title
+        // Fallback path for legacy/inconsistent records: keep any structurally valid listing.
+        // This prevents student dashboard from hiding listings that still appear on owner dashboard.
         const ownerId = String(flat?.ownerId || "").trim();
-        const ownerUser = state.users.get(ownerId);
-        if (ownerUser) {
-          const normalizedRole = String(ownerUser.role || ownerUser.intent || "").toLowerCase();
-          if (normalizedRole !== "owner") return true;
-        }
-        return false;
+        const hasId = Boolean(String(flat?.id || "").trim());
+        const hasTitle = Boolean(String(flat?.title || "").trim());
+        return Boolean(ownerId && hasId && hasTitle);
       })
       .map(enrichFlat)
       .filter((flat) => {
@@ -1164,6 +1165,17 @@ module.exports = function (app, ctx) {
     const hasExplicitMinimumScore = payload.minimumScore !== undefined && payload.minimumScore !== null && payload.minimumScore !== ""
     const minimumScore = hasExplicitMinimumScore ? Math.max(0, Math.min(40, toNumber(payload.minimumScore, 0))) : 0
     const requestedUniversity = String(payload.university || payload.college || "").trim()
+    const requestedBudgetMax = Math.max(0, toNumber(payload.budget || payload.preferredRentMax, 0))
+    const requestedRoomTypeRaw = String(payload.roomType || payload.preferredRoomType || "").trim().toLowerCase()
+    const requestedRoomType =
+      requestedRoomTypeRaw === "shared-room" || requestedRoomTypeRaw === "room-with-roommates"
+        ? "room-with-roommates"
+        : requestedRoomTypeRaw === "room-only"
+          ? "room-only"
+          : ""
+    const requestedAmenities = Array.isArray(payload.amenities)
+      ? payload.amenities.map((item) => String(item || "").trim().toLowerCase()).filter(Boolean)
+      : []
 
     const normalizeCollegeText = (value) =>
       String(value || "")
@@ -1184,6 +1196,16 @@ module.exports = function (app, ctx) {
     const ranked = state.flats
       .filter((flat) => isActiveOwnerListing(flat))
       .map(enrichFlat)
+      .filter((flat) => {
+        const roomTypeMatch = !requestedRoomType || String(flat.flatType || "").toLowerCase() === requestedRoomType
+        const budgetMatch = !requestedBudgetMax || Number(flat.rent || 0) <= requestedBudgetMax
+        const flatAmenities = Array.isArray(flat.amenities)
+          ? flat.amenities.map((item) => String(item || "").trim().toLowerCase())
+          : []
+        const amenitiesMatch =
+          !requestedAmenities.length || requestedAmenities.every((amenity) => flatAmenities.includes(amenity))
+        return roomTypeMatch && budgetMatch && amenitiesMatch
+      })
       .map((flat) => {
         const roommateScores = flat.roommateProfiles.map((roommate) => {
           const personalityScore = profileToScore(roommate.personality, preferences)
@@ -1266,6 +1288,9 @@ module.exports = function (app, ctx) {
 
     res.json({
       preferences,
+      roomType: requestedRoomType || null,
+      budget: requestedBudgetMax || null,
+      amenities: requestedAmenities,
       minimumScore,
       recommendations: ranked,
     })

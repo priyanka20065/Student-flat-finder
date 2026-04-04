@@ -111,11 +111,6 @@ profileForm?.addEventListener("submit", async (event) => {
     bio: String(document.getElementById("profileBio")?.value || "").trim(),
   }
 
-  if (isNormalStudent && !payload.university) {
-    profileStatus.textContent = "University / College name is required for normal students."
-    return
-  }
-
   // Removed personality fields from profile
 
   try {
