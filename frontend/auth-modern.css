@@ -335,3 +335,62 @@ body.auth-modern-bg {
     max-width: 98vw;
   }
 }
+
+body.auth-modern-bg {
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  .auth-modern-center {
+    min-height: auto;
+    padding: 1.4rem 0.8rem;
+    align-items: flex-start;
+  }
+
+  .login-modern-card,
+  .auth-modern-card {
+    max-width: 100%;
+    border-radius: 20px;
+    padding: 1.6rem 1rem 1.2rem 1rem;
+  }
+
+  .login-title,
+  .auth-modern-card h1 {
+    font-size: 1.75rem;
+    line-height: 1.15;
+  }
+
+  .login-role-group {
+    flex-wrap: wrap;
+  }
+
+  .role-btn {
+    max-width: none;
+    font-size: 1rem;
+  }
+
+  .auth-modern-form label {
+    display: block;
+  }
+}
+
+@media (max-width: 420px) {
+  .auth-modern-center {
+    padding: 1rem 0.55rem;
+  }
+
+  .login-modern-card,
+  .auth-modern-card {
+    padding: 1.25rem 0.85rem 1rem 0.85rem;
+    border-radius: 16px;
+  }
+
+  .login-title,
+  .auth-modern-card h1 {
+    font-size: 1.5rem;
+  }
+
+  .login-subtext {
+    font-size: 0.95rem;
+  }
+}

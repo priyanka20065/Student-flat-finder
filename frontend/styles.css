@@ -3359,3 +3359,100 @@ select option {
   color: #ffffff !important;
   font-weight: 600 !important;
 }
+
+@media (max-width: 768px) {
+  .nav {
+    padding: 0.75rem 1rem;
+  }
+
+  .nav nav {
+    gap: 0.35rem;
+    row-gap: 0.5rem;
+  }
+
+  .nav a {
+    margin-left: 0;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  .account-menu {
+    width: 100%;
+  }
+
+  .account-menu-btn {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .page,
+  .page-wide,
+  .map-page,
+  .page-intro {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .page {
+    margin: 1.2rem auto;
+  }
+
+  .page-intro h1,
+  .results h1,
+  .page h1 {
+    font-size: 1.55rem;
+  }
+
+  .flat-grid,
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .flat-hero-image {
+    min-height: 220px;
+  }
+
+  .modal-shell {
+    width: min(95vw, 560px);
+    max-width: 95vw;
+  }
+
+  .roommate-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .footer-inner {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav {
+    padding: 0.6rem 0.7rem;
+  }
+
+  .nav nav {
+    justify-content: flex-start;
+  }
+
+  .nav a {
+    font-size: 0.82rem;
+    padding: 0.35rem 0.45rem;
+  }
+
+  .simple-form {
+    padding: 1.2rem 0.9rem;
+  }
+
+  .choice-card {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .map-frame {
+    min-height: 280px;
+  }
+}
