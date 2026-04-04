@@ -1,5 +1,12 @@
 const path = window.location.pathname
-const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "")
+const API_BASE_URL = String(
+  window.VITE_API_BASE_URL ||
+  window.__APP_CONFIG__?.VITE_API_BASE_URL ||
+  document.documentElement?.dataset?.apiBaseUrl ||
+  "",
+)
+  .trim()
+  .replace(/\/$/, "")
 
 function injectGlobalFooter() {
   if (document.querySelector("[data-global-footer]")) {
