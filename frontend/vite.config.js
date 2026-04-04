@@ -1,6 +1,31 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import { resolve } from 'path'
 import fs from 'fs'
+
+function copyLegacyAssetsPlugin() {
+    return {
+        name: 'copy-legacy-assets',
+        closeBundle() {
+            const distDir = resolve(__dirname, 'dist')
+            const sourceJsDir = resolve(__dirname, 'js')
+            const targetJsDir = resolve(distDir, 'js')
+
+            if (fs.existsSync(sourceJsDir)) {
+                fs.mkdirSync(targetJsDir, { recursive: true })
+                fs.cpSync(sourceJsDir, targetJsDir, { recursive: true })
+            }
+
+            const legacyCssFiles = ['styles.css', 'auth-modern.css']
+            legacyCssFiles.forEach((fileName) => {
+                const sourceFile = resolve(__dirname, fileName)
+                const targetFile = resolve(distDir, fileName)
+                if (fs.existsSync(sourceFile)) {
+                    fs.copyFileSync(sourceFile, targetFile)
+                }
+            })
+        },
+    }
+}
 
 // Custom plugin to rewrite clean URLs to their index.html counterparts
 function cleanUrlPlugin() {
@@ -40,12 +65,16 @@ function cleanUrlPlugin() {
     }
 }
 
-export default defineConfig({
-    plugins: [cleanUrlPlugin()],
+export default defineConfig(({ mode }) => {
+    const env = loadEnv(mode, process.cwd(), '')
+    const proxyTarget = String(env.VITE_API_BASE_URL || 'http://localhost:4001').replace(/\/$/, '')
+
+    return {
+    plugins: [cleanUrlPlugin(), copyLegacyAssetsPlugin()],
     server: {
         proxy: {
-            '/api': 'http://localhost:4000',
-            '/uploads': 'http://localhost:4000',
+            '/api': proxyTarget,
+            '/uploads': proxyTarget,
         },
     },
     build: {
@@ -72,5 +101,6 @@ export default defineConfig({
                 notFound: resolve(__dirname, '404.html'),
             }
         }
+    }
     }
 })
