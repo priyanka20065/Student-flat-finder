@@ -10,12 +10,12 @@
       "destination": "https://student-flat-finder-backend.onrender.com/uploads/:path*"
     },
     {
-      "source": "/flat/:id",
-      "destination": "/flat/index.html"
+      "source": "/flat/:path*",
+      "destination": "/flat"
     },
     {
-      "source": "/roommate/:id",
-      "destination": "/roommate/index.html"
+      "source": "/roommate/:path*",
+      "destination": "/roommate"
     }
   ]
 }
