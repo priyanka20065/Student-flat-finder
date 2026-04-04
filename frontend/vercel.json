@@ -1,0 +1,13 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/flat/:id",
+      "destination": "/flat/index.html"
+    },
+    {
+      "source": "/roommate/:id",
+      "destination": "/roommate/index.html"
+    }
+  ]
+}
