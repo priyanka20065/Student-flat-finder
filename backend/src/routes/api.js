@@ -127,6 +127,7 @@ module.exports = function (app, ctx) {
       roommateProfile = {
         id: ctx.makeId ? ctx.makeId("rm") : makeId("rm"),
         name,
+        email: String(email || "").trim().toLowerCase(),
         age: age ? Number(age) : 20,
         gender: gender || "",
         profession: profession || "",
@@ -153,6 +154,7 @@ module.exports = function (app, ctx) {
       ctx.state.roommates.unshift(roommateProfile);
     } else {
       roommateProfile.name = name;
+      roommateProfile.email = String(email || roommateProfile.email || "").trim().toLowerCase();
       roommateProfile.age = age ? Number(age) : roommateProfile.age;
       roommateProfile.gender = gender || roommateProfile.gender;
       roommateProfile.profession = profession || roommateProfile.profession;
@@ -559,27 +561,64 @@ module.exports = function (app, ctx) {
     res.json(results);
   })
 
-  app.get("/api/flats/:id", (req, res) => {
-    const flat = state.flats.find((item) => item.id === req.params.id)
-    if (!flat || !isActiveOwnerListing(flat)) {
-      res.status(404).json({ message: "Flat not found" })
-      return
+  function getActiveSharedOccupantUserIdsForFlat(flat) {
+    if (!flat || String(flat.flatType || "") !== "room-with-roommates") {
+      return []
     }
-    // Compose roommatesInfo for compatibility with frontend
+
+    const profileUserIds = (Array.isArray(flat.roommates) ? flat.roommates : [])
+      .map((roommateId) => state.roommates.find((roommate) => roommate.id === roommateId))
+      .filter(Boolean)
+      .map((roommate) => String(roommate.createdByUserId || roommate.purchasedByUserId || "").trim())
+      .filter((userId) => Boolean(userId && state.users.get(userId)))
+
+    const metrics = getFlatMetrics(flat.id)
+    const metricsUserIds = (Array.isArray(metrics.roommateBookedUserIds) ? metrics.roommateBookedUserIds : [])
+      .map((item) => String(item || "").trim())
+      .filter((userId) => Boolean(userId && state.users.get(userId)))
+
+    return [...new Set([...profileUserIds, ...metricsUserIds])]
+  }
+
+  function composeRoommatesInfoForFlat(flat) {
     let roommatesInfo = [];
     if (flat.flatType === "room-with-roommates" && Array.isArray(flat.roommates) && flat.roommates.length > 0) {
       roommatesInfo = flat.roommates
         .map(rmId => {
-          const rm = state.roommates.find(r => r.id === rmId);
-          if (!rm) return null;
-          let user = null;
+          const normalizedRmId = String(rmId || "").trim()
+          const rm = state.roommates.find((roommate) => String(roommate.id || "").trim() === normalizedRmId)
+            || state.roommates.find((roommate) => String(roommate.createdByUserId || "").trim() === normalizedRmId)
+            || state.roommates.find((roommate) => String(roommate.purchasedByUserId || "").trim() === normalizedRmId)
+            || state.roommates.find((roommate) => {
+              const joinedIds = Array.isArray(roommate.currentRoommateUserIds)
+                ? roommate.currentRoommateUserIds.map((item) => String(item || "").trim())
+                : []
+              return joinedIds.includes(normalizedRmId)
+            })
+
+          if (!rm) {
+            const fallbackUser = state.users.get(normalizedRmId)
+            if (!fallbackUser) {
+              return null
+            }
+            return {
+              id: `user-${fallbackUser.id}`,
+              name: String(fallbackUser.name || "Student").trim() || "Student",
+              email: String(fallbackUser.email || "").trim(),
+              createdByUserId: fallbackUser.id,
+            }
+          }
+          let user = null
           if (rm.createdByUserId && state.users && typeof state.users.get === "function") {
-            user = state.users.get(rm.createdByUserId);
+            user = state.users.get(String(rm.createdByUserId || "").trim())
+            if (!user) {
+              return null
+            }
           }
           return {
             id: rm.id,
             name: rm.name || user?.name || "-",
-            email: user?.email || rm.email || "-",
+            email: String(user?.email || rm.email || "").trim(),
             age: rm.age || user?.age || "-",
             gender: rm.gender || user?.gender || "-",
             profession: rm.profession || rm.course || user?.profession || user?.course || "-",
@@ -606,6 +645,50 @@ module.exports = function (app, ctx) {
         })
         .filter(Boolean);
     }
+
+    // Fallback: ensure booked students from metrics are visible in table even if roommate profile linkage is missing.
+    if (flat.flatType === "room-with-roommates") {
+      const metrics = getFlatMetrics(flat.id)
+      const bookedUserIds = Array.isArray(metrics.roommateBookedUserIds) ? metrics.roommateBookedUserIds : []
+      const knownUserIds = new Set(
+        roommatesInfo
+          .map((item) => String(item?.createdByUserId || "").trim())
+          .filter(Boolean),
+      )
+
+      bookedUserIds.forEach((bookedUserId) => {
+        const normalizedBookedUserId = String(bookedUserId || "").trim()
+        if (!normalizedBookedUserId || knownUserIds.has(normalizedBookedUserId)) {
+          return
+        }
+
+        const user = state.users.get(normalizedBookedUserId)
+        if (!user) {
+          return
+        }
+
+        roommatesInfo.push({
+          id: `user-${normalizedBookedUserId}`,
+          name: String(user.name || "Student").trim() || "Student",
+          email: String(user.email || "").trim(),
+          createdByUserId: normalizedBookedUserId,
+        })
+        knownUserIds.add(normalizedBookedUserId)
+      })
+    }
+
+    return roommatesInfo
+  }
+
+  app.get("/api/flats/:id", (req, res) => {
+    const flat = state.flats.find((item) => item.id === req.params.id)
+    if (!flat || !isActiveOwnerListing(flat)) {
+      res.status(404).json({ message: "Flat not found" })
+      return
+    }
+
+    const roommatesInfo = composeRoommatesInfoForFlat(flat)
+
     res.json({ ...enrichFlat(flat), roommatesInfo });
   })
 
@@ -618,7 +701,8 @@ module.exports = function (app, ctx) {
 
     const viewerUserId = String(req.body?.viewerUserId || "").trim()
     if (!viewerUserId || viewerUserId === String(flat.ownerId || "").trim()) {
-      res.json(enrichFlat(flat))
+      const roommatesInfo = composeRoommatesInfoForFlat(flat)
+      res.json({ ...enrichFlat(flat), roommatesInfo })
       return
     }
 
@@ -634,7 +718,8 @@ module.exports = function (app, ctx) {
       }
     }
 
-    res.json(enrichFlat(flat))
+    const roommatesInfo = composeRoommatesInfoForFlat(flat)
+    res.json({ ...enrichFlat(flat), roommatesInfo })
   })
 
   app.post("/api/flats/:id/like", async (req, res) => {
@@ -1547,7 +1632,19 @@ module.exports = function (app, ctx) {
       }
       // For shared rooms, block only if maxOccupants reached
       if (flat.flatType === "room-with-roommates") {
-        const currentRoommates = Array.isArray(flat.roommates) ? flat.roommates.length : 0;
+        const sharedBookedUserIds = getActiveSharedOccupantUserIdsForFlat(flat)
+        if (sharedBookedUserIds.includes(buyerUserId)) {
+          res.status(409).json({ message: "You have already booked a seat in this flat" })
+          return
+        }
+
+        const alreadyBookedThisFlat = sharedBookedUserIds.includes(buyerUserId)
+        if (alreadyBookedThisFlat) {
+          res.status(409).json({ message: "You have already booked a seat in this flat" })
+          return
+        }
+
+        const currentRoommates = sharedBookedUserIds.length
         const maxOccupants = flat.maxOccupants || 1;
         if (currentRoommates >= maxOccupants) {
           res.status(409).json({ message: "All seats in this shared flat are filled" })
@@ -1651,6 +1748,8 @@ module.exports = function (app, ctx) {
       return
     }
 
+    let bookingOnboarding = null
+
     if (razorpay && orderId) {
       try {
         const order = await razorpay.orders.fetch(orderId)
@@ -1660,6 +1759,7 @@ module.exports = function (app, ctx) {
           const buyerUserId = String(orderNotes.userId || "").trim()
           const flatId = String(orderNotes.flatId || "").trim()
           const flat = state.flats.find((item) => item.id === flatId)
+          const isSharedFlat = String(flat?.flatType || "") === "room-with-roommates"
 
           if (!buyerUserId || !flatId || !flat || !isActiveOwnerListing(flat)) {
             res.status(400).json({ verified: false, message: "Invalid flat purchase metadata" })
@@ -1678,9 +1778,30 @@ module.exports = function (app, ctx) {
 
           const metrics = getFlatMetrics(flatId)
           const alreadyPurchasedBy = String(metrics.purchasedByUserId || "")
-          if (alreadyPurchasedBy && alreadyPurchasedBy !== buyerUserId) {
+          if (!isSharedFlat && alreadyPurchasedBy && alreadyPurchasedBy !== buyerUserId) {
             res.status(409).json({ verified: false, message: "This flat is already sold/booked" })
             return
+          }
+
+          if (isSharedFlat) {
+            const sharedBookedUserIds = getActiveSharedOccupantUserIdsForFlat(flat)
+            if (sharedBookedUserIds.includes(buyerUserId)) {
+              res.status(409).json({ verified: false, message: "You have already booked a seat in this flat" })
+              return
+            }
+
+            const alreadyBookedThisFlat = sharedBookedUserIds.includes(buyerUserId)
+
+            if (alreadyBookedThisFlat) {
+              res.status(409).json({ verified: false, message: "You have already booked a seat in this flat" })
+              return
+            }
+
+            const maxOccupants = Math.max(1, Number(flat.maxOccupants || 1))
+            if (sharedBookedUserIds.length >= maxOccupants) {
+              res.status(409).json({ verified: false, message: "All seats in this shared flat are filled" })
+              return
+            }
           }
 
           const purchasedFlatId = getPurchasedFlatIdByUser(buyerUserId)
@@ -1689,8 +1810,13 @@ module.exports = function (app, ctx) {
             return
           }
 
-          metrics.purchasedByUserId = buyerUserId
-          metrics.purchasedAt = new Date().toISOString()
+          if (!isSharedFlat) {
+            metrics.purchasedByUserId = buyerUserId
+            metrics.purchasedAt = new Date().toISOString()
+          } else {
+            const sharedBookedUserIds = Array.isArray(metrics.roommateBookedUserIds) ? metrics.roommateBookedUserIds : []
+            metrics.roommateBookedUserIds = [...new Set([...sharedBookedUserIds, buyerUserId])]
+          }
           state.flatMetrics[flatId] = metrics
 
           // PATCH: Add userId to flat.roommates for shared rooms
@@ -1719,6 +1845,7 @@ module.exports = function (app, ctx) {
                 virtualTourUrls: [],
                 virtualTourUrl: null,
                 createdByUserId: buyerUserId,
+                email: String(buyerUser?.email || "").trim().toLowerCase(),
               };
               state.roommates.unshift(roommateProfile);
             } else {
@@ -1733,7 +1860,9 @@ module.exports = function (app, ctx) {
               roommateProfile.location = { address: buyerUser?.address || roommateProfile.address || "", coordinates: [] };
               roommateProfile.institution = { address: buyerUser?.university || roommateProfile.institution?.address || "", coordinates: [] };
               roommateProfile.createdByUserId = buyerUserId;
+              roommateProfile.email = String(buyerUser?.email || roommateProfile.email || "").trim().toLowerCase();
             }
+            roommateProfile.purchasedByUserId = buyerUserId;
             try {
               await persistRoommate(roommateProfile);
             } catch (error) {
@@ -1747,6 +1876,12 @@ module.exports = function (app, ctx) {
               await persistFlat(flat);
             } catch (error) {
               console.error("Failed to persist updated flat roommates after booking:", error.message);
+            }
+
+            bookingOnboarding = {
+              required: true,
+              flatId,
+              userId: buyerUserId,
             }
           }
 
@@ -1905,6 +2040,7 @@ module.exports = function (app, ctx) {
       message: "Payment verified successfully",
       subscriptionActivated: Boolean(updatedUser),
       user: updatedUser,
+      bookingOnboarding,
     })
   })
 

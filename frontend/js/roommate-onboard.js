@@ -66,11 +66,15 @@ window.addEventListener("DOMContentLoaded", async () => {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error((await res.json()).message || "Failed to save");
-      onboardStatus.textContent = "Profile saved! You can close this tab.";
-          // Optionally, reload parent window (flat details) to show updated roommate info
-          if (window.opener) {
-            window.opener.location.reload();
-          }
+      onboardStatus.textContent = "Profile saved! Redirecting back to flat details...";
+      setTimeout(() => {
+        if (flatId) {
+          window.location.href = `/flat/${encodeURIComponent(flatId)}`;
+          return;
+        }
+
+        window.location.href = "/dashboard";
+      }, 700);
     } catch (err) {
       onboardStatus.textContent = err.message;
     }

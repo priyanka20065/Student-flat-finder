@@ -38,6 +38,16 @@
           <div id="studentPreferenceFields" class="profile-form-grid profile-wide" data-profile-panel="personal">
             <label>University<input id="profileUniversity" name="university" type="text" placeholder="Delhi University" /></label>
             <label>Course<input id="profileCourse" name="course" type="text" placeholder="Computer Science" /></label>
+            <label>Preferred Room Type
+              <select id="profilePreferredRoomType" name="preferredRoomType">
+                <option value="all">Both (Single + Shared)</option>
+                <option value="room-only">Single Room</option>
+                <option value="room-with-roommates">Shared Room</option>
+              </select>
+            </label>
+            <label>Preferred Budget (Max)
+              <input id="profilePreferredRentMax" name="preferredRentMax" type="number" min="0" step="500" placeholder="15000" />
+            </label>
             <label>Year
               <select id="profileYear" name="year">
                 <option value="">Select Year</option>

@@ -13,6 +13,7 @@ let activeFlatId = ""
 let studentCollege = ""
 let routeOriginOverride = ""
 let routeOriginDebounceTimer
+let routeOriginResolveTimer
 let stream
 
 function normalizeCoordinates(entry) {
@@ -132,6 +133,45 @@ function routeEmbedUrl(item) {
   return `https://www.google.com/maps?output=embed&saddr=${encodeURIComponent(origin)}&daddr=${encodeURIComponent(destination)}&dirflg=d&travelmode=driving`
 }
 
+function getActiveFlatAddress() {
+  const activeFlat = allFlats.find((flat) => flat.id === activeFlatId)
+  return String(activeFlat?.address || "").trim()
+}
+
+async function resolveOriginAddress(rawOrigin) {
+  const query = String(rawOrigin || "").trim()
+  if (query.length < 3) {
+    return query
+  }
+
+  const cityHint = toCityHint(getActiveFlatAddress())
+  const queryText = query.includes(",") || !cityHint ? query : `${query}, ${cityHint}`
+
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(queryText)}`,
+      {
+        headers: {
+          Accept: "application/json",
+        },
+      },
+    )
+
+    if (!response.ok) {
+      return query
+    }
+
+    const results = await response.json()
+    if (!Array.isArray(results) || results.length === 0) {
+      return query
+    }
+
+    return String(results[0]?.display_name || query).trim() || query
+  } catch {
+    return query
+  }
+}
+
 function formatDistance(distance) {
   if (!Number.isFinite(Number(distance))) {
     return null
@@ -150,10 +190,13 @@ function setSelectedFlat(item) {
     return
   }
 
-  // When switching listings, always reset route origin to the student's saved college.
-  routeOriginOverride = ""
-  if (routeOriginInput) {
-    routeOriginInput.value = studentCollege
+  const switchedFlat = Boolean(activeFlatId && activeFlatId !== item.id)
+  if (switchedFlat) {
+    // Reset to default college only when user selects a different listing.
+    routeOriginOverride = ""
+    if (routeOriginInput) {
+      routeOriginInput.value = studentCollege
+    }
   }
 
   activeFlatId = item.id
@@ -295,18 +338,37 @@ window.addEventListener("DOMContentLoaded", () => {
 
   if (routeOriginInput) {
     routeOriginInput.addEventListener("input", () => {
-      routeOriginOverride = String(routeOriginInput.value || "").trim()
+      const typedValue = String(routeOriginInput.value || "").trim()
+      routeOriginOverride = typedValue
       window.clearTimeout(routeOriginDebounceTimer)
       routeOriginDebounceTimer = window.setTimeout(() => {
         refreshActiveRoute()
       }, 350)
+
+      window.clearTimeout(routeOriginResolveTimer)
+      routeOriginResolveTimer = window.setTimeout(async () => {
+        const resolvedAddress = await resolveOriginAddress(typedValue)
+        const currentInputValue = String(routeOriginInput.value || "").trim()
+        // Apply only if user has not typed something else in the meantime.
+        if (!currentInputValue || currentInputValue !== typedValue) {
+          return
+        }
+
+        routeOriginOverride = resolvedAddress
+        routeOriginInput.value = resolvedAddress
+        refreshActiveRoute()
+      }, 900)
     })
 
     routeOriginInput.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault()
-        routeOriginOverride = String(routeOriginInput.value || "").trim()
-        refreshActiveRoute()
+        const typedValue = String(routeOriginInput.value || "").trim()
+        resolveOriginAddress(typedValue).then((resolvedAddress) => {
+          routeOriginOverride = resolvedAddress
+          routeOriginInput.value = resolvedAddress
+          refreshActiveRoute()
+        })
       }
     })
   }

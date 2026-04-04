@@ -45,10 +45,10 @@ function buildRoommateListingCard(profile) {
       <div class="dashboard-reco-content">
         <h3>${profile.name}</h3>
         <p class="muted">${profile.course || "Student"}</p>
+           <p class="dashboard-status-line"><strong>Budget:</strong> ${window.AppUtils.formatINR(profile.preferredRentMax)} / month</p>
         <p class="muted text-justify">${profile.bio || "Roommate profile"}</p>
         <div class="chip-list">${chips}</div>
         <div class="dashboard-reco-bottom">
-          <p><strong>Budget:</strong> <span class="muted">${window.AppUtils.formatINR(profile.preferredRentMax)} / month</span></p>
           <a class="btn btn-primary" href="${roommateDetailUrl}">View Details</a>
         </div>
       </div>
@@ -132,10 +132,15 @@ function buildRecommendationCard(flat, isOwner = false) {
   const chips = (flat.amenities || []).slice(0, 3).map((item) => `<span class="chip">${item}</span>`).join("")
   const badge = flat.flatType === "room-only" ? "Room Only" : "Room with Roommates"
   const stats = flat.stats || {}
+  const saleStatusLabel = flat.flatType === "room-with-roommates"
+    ? (stats.isSold ? "✅ Sold" : "🟢 Available")
+    : (stats.isSold ? `✅ Sold to ${stats.purchasedByName || "buyer"}` : "🟢 Available")
   // Show current occupants for shared rooms (students only)
   let occupantInfo = ""
   if (flat.flatType === "room-with-roommates") {
-    const current = Array.isArray(flat.roommates) ? flat.roommates.length : 0;
+    const current = Number.isFinite(Number(flat.stats?.currentOccupants))
+      ? Number(flat.stats.currentOccupants)
+      : (Array.isArray(flat.roommates) ? flat.roommates.length : 0)
     const max = flat.maxOccupants || 1;
     occupantInfo = `<p>Current Occupants: <strong>${current}</strong></p><p>Vacancies: <strong>${Math.max(0, max - current)}</strong></p>`
   }
@@ -143,11 +148,8 @@ function buildRecommendationCard(flat, isOwner = false) {
     ? `
       <div class="chip-list">
         <button class="btn btn-light small-btn" type="button">💬 ${Number(stats.uniqueMessageUsers || 0)} users messaged</button>
-        <button class="btn btn-light small-btn" type="button">👁️ ${Number(stats.views || 0)} views</button>
         <button class="btn btn-light small-btn" type="button">❤️ ${Number(stats.likes || 0)} likes</button>
-        <button class="btn btn-light small-btn" type="button">${
-          stats.isSold ? `✅ Sold to ${stats.purchasedByName || "buyer"}` : "🟢 Available"
-        }</button>
+        <button class="btn btn-light small-btn" type="button">${saleStatusLabel}</button>
       </div>
     `
     : ""
@@ -165,6 +167,7 @@ function buildRecommendationCard(flat, isOwner = false) {
         <h3>${cleanQuotes(flat.title)}</h3>
         <p class="muted text-justify">${cleanQuotes(flat.description)}</p>
         <p class="muted">📍 ${flat.location?.address || ""}</p>
+        <p class="dashboard-status-line"><strong>Sale Status:</strong> ${saleStatusLabel}</p>
         ${occupantInfo}
         ${ownerStats}
         <div class="chip-list">${chips}</div>
@@ -225,12 +228,16 @@ async function loadDashboard() {
     if (isOwner) {
       data = await window.AppUtils.api(`/api/list/owner/${encodeURIComponent(currentUser.id)}`);
     } else {
+      const preferredRoomType = String(profile.preferredRoomType || "").toLowerCase()
+      const requestRoomType =
+        preferredRoomType === "room-with-roommates"
+          ? "shared-room"
+          : preferredRoomType === "room-only"
+            ? "room-only"
+            : ""
       const quizPayload = {
         budget: Number(profile.preferredRentMax || 0),
-        roomType:
-          String(profile.preferredRoomType || "").toLowerCase() === "room-with-roommates"
-            ? "shared-room"
-            : "room-only",
+        ...(requestRoomType ? { roomType: requestRoomType } : {}),
         amenities: Array.isArray(profile.preferredAmenities) ? profile.preferredAmenities : [],
         houseRules: String(profile.houseRulesPreference || ""),
         interests: Array.isArray(profile.interests) ? profile.interests : [],
@@ -246,13 +253,16 @@ async function loadDashboard() {
           body: JSON.stringify(quizPayload),
         })
         data = Array.isArray(matchResult?.recommendations) ? matchResult.recommendations : []
+        if (!data.length) {
+          const fallbackParams = new URLSearchParams({
+            ...(requestRoomType ? { flatType: requestRoomType === "shared-room" ? "room-with-roommates" : requestRoomType } : {}),
+            maxRent: String(Number(profile.preferredRentMax || 0) || "999999"),
+          })
+          data = await window.AppUtils.api(`/api/flats?${fallbackParams.toString()}`)
+        }
       } catch {
-        const flatType =
-          String(profile.preferredRoomType || "").toLowerCase() === "room-with-roommates"
-            ? "room-with-roommates"
-            : "room-only"
         const fallbackParams = new URLSearchParams({
-          flatType,
+          ...(requestRoomType ? { flatType: requestRoomType === "shared-room" ? "room-with-roommates" : requestRoomType } : {}),
           maxRent: String(Number(profile.preferredRentMax || 0) || "999999"),
           interests: Array.isArray(profile.interests) ? profile.interests.join(",") : "",
           cleanliness: String(Number(profile.personality?.cleanliness || 0) || ""),
@@ -279,7 +289,7 @@ async function loadDashboard() {
     if (!data.length) {
       dashboardRecommendations.innerHTML = isOwner
         ? "<p class='muted'>You have not listed any property yet.</p>"
-        : "<p class='muted'>No owner listings available yet.</p>";
+        : "<p class='muted'>No matching flats found for your current preferences.</p>";
       return;
     }
 

@@ -324,14 +324,18 @@ function setupPanoramaAutoRotate(tourUrls, activeSceneIndex = 0) {
 }
 
 function buildFlatPage(flat) {
+  currentUser = window.AppUtils.getCurrentUser()
+
   // Prepare roommate info variables before using them
   const roommatesInfo = Array.isArray(flat.roommatesInfo) ? flat.roommatesInfo : [];
+  const displayRoommates = [...roommatesInfo]
+  const currentOccupants = Number.isFinite(Number(flat.stats?.currentOccupants))
+    ? Number(flat.stats.currentOccupants)
+    : displayRoommates.length
   let roommateTable = '';
   if (flat.flatType === "room-with-roommates") {
-    let noRoommateMsg = "No roommates yet";
-    if (roommatesInfo.length === 0 && flat.stats?.isSold) {
-      noRoommateMsg = "Room is sold but no roommate details available yet. Roommate info will appear here after booking.";
-    }
+    const noRoommateMsg = "No roommates yet";
+
     roommateTable = `
       <h4 style=\"margin-top:1em;\">Current Roommates</h4>
       <table class=\"roommate-table\">
@@ -339,8 +343,8 @@ function buildFlatPage(flat) {
           <th>Name</th><th>Email</th><th>Profile</th>
         </tr></thead>
         <tbody>
-          ${roommatesInfo.length === 0 ? `<tr><td colspan=\"3\" class=\"muted\">${noRoommateMsg}</td></tr>` :
-            roommatesInfo.map(rm => `
+          ${displayRoommates.length === 0 ? `<tr><td colspan=\"3\" class=\"muted\">${noRoommateMsg}</td></tr>` :
+            displayRoommates.map(rm => `
               <tr>
                 <td>${cleanQuotes(rm.name) || '-'}</td>
                 <td>${rm.email || '-'}</td>
@@ -351,19 +355,64 @@ function buildFlatPage(flat) {
       </table>
     `;
   }
-  currentUser = window.AppUtils.getCurrentUser()
   const isOwnerViewingOwnFlat = Boolean(currentUser && currentUser.role === "owner" && currentUser.id === flat.ownerId)
   const isBoughtByCurrentUser = Boolean(currentUser?.id && String(flat.stats?.purchasedByUserId || "") === String(currentUser.id))
+  const isSharedBookedByCurrentUser = Boolean(
+    flat.flatType === "room-with-roommates" &&
+      currentUser?.id &&
+      Array.isArray(flat.stats?.roommateBookedUserIds) &&
+      flat.stats.roommateBookedUserIds.includes(String(currentUser.id)),
+  )
   // For shared rooms, do not block booking if sold; only block for single rooms
   const isSoldToAnotherUser = flat.flatType === "room-only" ? Boolean(flat.stats?.isSold && !isBoughtByCurrentUser) : false;
-  const currentOccupants = roommatesInfo.length;
+  const shouldDisableBookButton = isSoldToAnotherUser || isSharedBookedByCurrentUser
   const maxOccupants = flat.maxOccupants || 1;
   const vacancies = Math.max(0, maxOccupants - currentOccupants);
+  const sharedStatusLabel = isSharedBookedByCurrentUser
+    ? "✅ Seat Booked by You"
+    : vacancies <= 0
+      ? "✅ Full"
+      : currentOccupants > 0
+        ? `🟠 Booked (${currentOccupants}/${maxOccupants})`
+        : "🟢 Available"
+  const saleStatusLabel = flat.flatType === "room-with-roommates"
+    ? (flat.stats?.isSold ? "✅ Sold" : "🟢 Available")
+    : (flat.stats?.isSold ? `✅ Sold to ${flat.stats?.purchasedByName || "buyer"}` : "🟢 Available")
   // Already declared above, do not redeclare here
   // For shared rooms, booking is always enabled if vacancies > 0
-  const shouldShowPremiumCta = (flat.flatType === "room-only" ? !flat.stats?.isSold : vacancies > 0) && !isBoughtByCurrentUser && !currentUser?.subscription?.active
+  const shouldShowPremiumCta = (flat.flatType === "room-only" ? !flat.stats?.isSold : vacancies > 0) && !isBoughtByCurrentUser && !isSharedBookedByCurrentUser && !currentUser?.subscription?.active
   const amenities = (flat.amenities || []).map((item) => `<span class="chip">${item}</span>`).join("")
   const roomBadge = flat.flatType === "room-only" ? "Room Only" : "Room with Roommates"
+  const ownerActionStack = `
+    <button class="btn btn-light" type="button">💬 Users Messaged: ${Number(flat.stats?.uniqueMessageUsers || 0)}</button>
+    <button class="btn btn-light" type="button">❤️ Users Liked: ${Number(flat.stats?.likes || 0)}</button>
+    <button class="btn btn-light" type="button">👁️ Views: ${Number(flat.stats?.views || 0)}</button>
+    <button class="btn btn-dark" type="button">${saleStatusLabel}</button>
+  `
+  const studentActionStack = `
+    <button id="chatOwnerBtn" class="btn btn-primary" type="button">💬 Chat with Owner</button>
+    <button id="bookRoomBtn" class="btn btn-secondary" type="button" ${shouldDisableBookButton ? "disabled" : ""}>${
+      isSharedBookedByCurrentUser
+        ? "✅ Already Booked"
+        : isBoughtByCurrentUser
+          ? "✅ You Bought This Room"
+          : isSoldToAnotherUser
+            ? "✅ Sold"
+            : "🏠 Book Room"
+    }</button>
+    <button id="likeFlatBtn" class="btn btn-light" type="button">❤️ Like Flat</button>
+    <button id="scheduleVisitBtn" class="btn btn-dark" type="button">📞 Schedule Visit</button>
+    <button class="btn btn-dark" type="button">${
+      flat.flatType === "room-with-roommates"
+        ? sharedStatusLabel
+        : isBoughtByCurrentUser
+          ? "✅ Bought by You"
+          : isSoldToAnotherUser
+            ? `✅ Sold to ${flat.stats?.purchasedByName || "buyer"}`
+            : "🟢 Available"
+    }</button>
+    ${shouldShowPremiumCta ? '<a class="btn btn-premium" href="/subscription">⭐ Get Premium for 10% Off</a>' : ""}
+  `
 
   const tourUrls = Array.isArray(flat.virtualTourUrls)
     ? flat.virtualTourUrls
@@ -427,20 +476,7 @@ function buildFlatPage(flat) {
       <aside class="card">
         <h3>Interested?</h3>
         <div class="action-stack">
-          <button id="chatOwnerBtn" class="btn btn-primary" type="button">💬 Chat with Owner</button>
-          <button id="bookRoomBtn" class="btn btn-secondary" type="button" ${isSoldToAnotherUser ? "disabled" : ""}>${
-            isBoughtByCurrentUser ? "✅ You Bought This Room" : isSoldToAnotherUser ? "✅ Sold" : "🏠 Book Room"
-          }</button>
-          <button id="likeFlatBtn" class="btn btn-light" type="button">❤️ Like Flat</button>
-          <button id="scheduleVisitBtn" class="btn btn-dark" type="button">📞 Schedule Visit</button>
-          <button class="btn btn-dark" type="button">${
-            isBoughtByCurrentUser
-              ? "✅ Bought by You"
-              : isSoldToAnotherUser
-              ? `✅ Sold to ${flat.stats?.purchasedByName || "buyer"}`
-              : "🟢 Available"
-          }</button>
-          ${shouldShowPremiumCta ? '<a class="btn btn-premium" href="/subscription">⭐ Get Premium for 10% Off</a>' : ""}
+          ${isOwnerViewingOwnFlat ? ownerActionStack : studentActionStack}
         </div>
       </aside>
     </section>
@@ -454,6 +490,7 @@ function buildFlatPage(flat) {
         <h3>Quick Info</h3>
         <p><span class="muted">Available From:</span> <strong>${flat.availableFrom}</strong></p>
         <p><span class="muted">Room Type:</span> <strong>${flat.maxOccupants && flat.maxOccupants > 1 ? "Shared" : "Single"}</strong></p>
+        <p><span class="muted">Sale Status:</span> <strong>${saleStatusLabel}</strong></p>
         ${flat.flatType === "room-with-roommates" ? `<p><span class="muted">Current Occupants:</span> <strong>${currentOccupants}</strong></p>` : ""}
         ${flat.flatType === "room-with-roommates" ? `<p><span class="muted">Vacancies:</span> <strong>${vacancies}</strong></p>` : ""}
       </article>
@@ -652,14 +689,30 @@ async function openBookModal(flat) {
 
 
   if (flat.flatType === "room-with-roommates") {
-    const currentOccupants = Array.isArray(flat.roommates) ? flat.roommates.length : 0;
+    const alreadyBookedFromMetrics = Boolean(
+      currentUser?.id &&
+      Array.isArray(flat.stats?.roommateBookedUserIds) &&
+      flat.stats.roommateBookedUserIds.includes(String(currentUser.id)),
+    )
+    if (alreadyBookedFromMetrics) {
+      window.alert("You have already booked a seat in this flat.")
+      return
+    }
+
+    const currentOccupants = Number.isFinite(Number(flat.stats?.currentOccupants))
+      ? Number(flat.stats.currentOccupants)
+      : (Array.isArray(flat.roommatesInfo) ? flat.roommatesInfo.length : (Array.isArray(flat.roommates) ? flat.roommates.length : 0));
     const maxOccupants = flat.maxOccupants || 1;
     if (currentOccupants >= maxOccupants) {
       window.alert("All seats in this shared flat are filled.");
       return;
     }
-    // Optionally, block if user already booked this flat as roommate
-    if (Array.isArray(flat.roommates) && flat.roommates.some(rm => String(rm.purchasedByUserId || "") === String(currentUser.id || ""))) {
+    // Block duplicate booking by the same user for this shared flat.
+    const alreadyInRoommateProfiles = Array.isArray(flat.roommateProfiles)
+      && flat.roommateProfiles.some((rm) => String(rm.createdByUserId || rm.purchasedByUserId || "") === String(currentUser.id || ""));
+    const alreadyInRoommatesInfo = Array.isArray(flat.roommatesInfo)
+      && flat.roommatesInfo.some((rm) => String(rm.createdByUserId || rm.purchasedByUserId || "") === String(currentUser.id || ""));
+    if (alreadyInRoommateProfiles || alreadyInRoommatesInfo) {
       window.alert("You have already booked a seat in this flat.");
       return;
     }
@@ -717,10 +770,26 @@ async function openBookModal(flat) {
   const bookStatus = document.getElementById("bookStatus")
 
   payBookBtn?.addEventListener("click", async () => {
+    if (payBookBtn.disabled) {
+      return
+    }
+
+    payBookBtn.disabled = true
+    payBookBtn.textContent = "Processing..."
+
     try {
+      console.log("[booking] starting payment flow", {
+        flatId: flat.id,
+        flatType: flat.flatType,
+        userId: currentUser?.id,
+        payableAmount,
+      })
+
       const config = await window.AppUtils.api("/api/payment/config")
       if (!config.enabled || !config.keyId) {
         bookStatus.textContent = "Payment is not configured. Please configure Razorpay keys."
+        payBookBtn.disabled = false
+        payBookBtn.textContent = `Pay ${window.AppUtils.formatINR(payableAmount)}`
         return
       }
 
@@ -746,38 +815,88 @@ async function openBookModal(flat) {
         description: `Booking for ${flat.title}`,
         order_id: order.id,
         handler: async (response) => {
-          const verify = await window.AppUtils.api("/api/payment/verify", {
-            method: "POST",
-            body: JSON.stringify(response),
-          })
-          if (verify.verified) {
-            bookStatus.textContent = "Booking payment successful ✅";
-            // Always reload flat info after booking
-            setTimeout(async () => {
-              // Always reload flat info after booking for both owner and student views
-              const parts = window.location.pathname.split("/").filter(Boolean);
-              const flatId = parts[1];
-              if (flatId) {
-                const response = await fetch(`/api/flats/${flatId}`);
-                if (response.ok) {
-                  activeFlat = await response.json();
-                  buildFlatPage(activeFlat);
+          console.log("[booking] razorpay handler payload", response)
+          try {
+            const verify = await window.AppUtils.api("/api/payment/verify", {
+              method: "POST",
+              body: JSON.stringify(response),
+            })
+            console.log("[booking] verify response", verify)
+            if (verify.verified) {
+              if (flat.flatType === "room-with-roommates" && verify.bookingOnboarding?.required) {
+                const targetFlatId = encodeURIComponent(verify.bookingOnboarding.flatId || flat.id)
+                const targetUserId = encodeURIComponent(verify.bookingOnboarding.userId || currentUser.id)
+                bookStatus.textContent = "Payment successful. Redirecting to roommate details form..."
+                setTimeout(() => {
+                  window.location.href = `/roommate-onboard.html?flatId=${targetFlatId}&userId=${targetUserId}`
+                }, 500)
+                return
+              }
+
+              bookStatus.textContent = "Booking payment successful ✅";
+              setTimeout(async () => {
+                const parts = window.location.pathname.split("/").filter(Boolean);
+                const flatId = parts[1];
+                if (flatId) {
+                  const response = await fetch(`/api/flats/${flatId}`);
+                  if (response.ok) {
+                    activeFlat = await response.json();
+                    buildFlatPage(activeFlat);
+                  } else {
+                    window.location.reload();
+                  }
                 } else {
                   window.location.reload();
                 }
-              } else {
-                window.location.reload();
-              }
-            }, 1000);
-          } else {
+              }, 1000);
+              return
+            }
+
             bookStatus.textContent = "Payment verification failed";
+          } catch (error) {
+            console.error("[booking] verify failed", {
+              message: error?.message,
+              flatId: flat.id,
+              userId: currentUser?.id,
+              response,
+              error,
+            })
+            bookStatus.textContent = error.message || "Payment verification failed"
+            if (/already booked|already joined|filled|one normal student can buy only one room/i.test(String(error.message || ""))) {
+              setTimeout(async () => {
+                const response = await fetch(`/api/flats/${flat.id}`)
+                if (response.ok) {
+                  activeFlat = await response.json()
+                  buildFlatPage(activeFlat)
+                } else {
+                  window.location.reload()
+                }
+              }, 700)
+            }
+            payBookBtn.disabled = false
+            payBookBtn.textContent = `Pay ${window.AppUtils.formatINR(payableAmount)}`
           }
+        },
+        modal: {
+          ondismiss: () => {
+            payBookBtn.disabled = false
+            payBookBtn.textContent = `Pay ${window.AppUtils.formatINR(payableAmount)}`
+          },
         },
       })
 
       razorpay.open()
     } catch (error) {
+      console.error("[booking] create-order/config failed", {
+        message: error?.message,
+        flatId: flat.id,
+        userId: currentUser?.id,
+        payableAmount,
+        error,
+      })
       bookStatus.textContent = error.message
+      payBookBtn.disabled = false
+      payBookBtn.textContent = `Pay ${window.AppUtils.formatINR(payableAmount)}`
     }
   })
 

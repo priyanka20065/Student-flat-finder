@@ -58,7 +58,7 @@
 
 body.auth-modern-bg {
   min-height: 100vh;
-  background: #6a6aff;
+  background: #081a33;
   position: relative;
   font-family: 'Inter', 'Poppins', 'Outfit', Arial, sans-serif;
   color: var(--auth-text-main);
@@ -68,7 +68,10 @@ body.auth-modern-bg {
   position: fixed;
   top: 0; left: 0; width: 100vw; height: 100vh;
   z-index: 0;
-  background: linear-gradient(120deg, #6a6aff 0%, #ff5fd2 100%);
+  background:
+    radial-gradient(circle at 12% 25%, rgba(59, 130, 246, 0.22), transparent 38%),
+    radial-gradient(circle at 88% 78%, rgba(16, 185, 129, 0.18), transparent 42%),
+    linear-gradient(130deg, #06152c 0%, #0a2342 48%, #0f2f56 100%);
 }
 
 .login-modern-card {

@@ -29,8 +29,28 @@ function setInputValue(id, value) {
   node.value = value ?? ""
 }
 
+function normalizePreferredRoomType(value) {
+  const normalized = String(value || "").trim().toLowerCase()
+  if (normalized === "both") {
+    return "all"
+  }
+  if (normalized === "all" || normalized === "room-only" || normalized === "room-with-roommates") {
+    return normalized
+  }
+  return "room-only"
+}
+
 function applyRoleSpecificProfile() {
   studentPreferenceFields?.classList.toggle("hidden", isOwner || activeProfileTab !== "personal")
+
+  const preferredRoomTypeInput = document.getElementById("profilePreferredRoomType")
+  const preferredRentMaxInput = document.getElementById("profilePreferredRentMax")
+  if (preferredRoomTypeInput) {
+    preferredRoomTypeInput.disabled = Boolean(isOwner)
+  }
+  if (preferredRentMaxInput) {
+    preferredRentMaxInput.disabled = Boolean(isOwner)
+  }
 
   profileTabs.forEach((tab, index) => {
     tab.classList.toggle("hidden", index > 0)
@@ -85,6 +105,8 @@ async function loadProfile() {
     setInputValue("profilePhone", profile.phone)
     setInputValue("profileUniversity", profile.university)
     setInputValue("profileCourse", profile.course)
+    setInputValue("profilePreferredRoomType", normalizePreferredRoomType(profile.preferredRoomType || "room-only"))
+    setInputValue("profilePreferredRentMax", profile.preferredRentMax)
     setInputValue("profileYear", profile.year)
     setInputValue("profileBio", profile.bio)
     // Removed personality fields from profile
@@ -109,6 +131,11 @@ profileForm?.addEventListener("submit", async (event) => {
     course: String(document.getElementById("profileCourse")?.value || "").trim(),
     year: String(document.getElementById("profileYear")?.value || "").trim(),
     bio: String(document.getElementById("profileBio")?.value || "").trim(),
+  }
+
+  if (!isOwner) {
+    payload.preferredRoomType = normalizePreferredRoomType(document.getElementById("profilePreferredRoomType")?.value || "room-only")
+    payload.preferredRentMax = Number(document.getElementById("profilePreferredRentMax")?.value || 0)
   }
 
   // Removed personality fields from profile

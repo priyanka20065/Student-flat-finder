@@ -32,10 +32,6 @@ function prefillQuizForm(userProfile) {
     roomTypeInput.checked = true
   }
 
-  const preferredAmenities = Array.isArray(userProfile.preferredAmenities) ? userProfile.preferredAmenities : []
-  quizForm.querySelectorAll('input[name="amenities"]').forEach((checkbox) => {
-    checkbox.checked = preferredAmenities.includes(checkbox.value)
-  })
   setField("houseRules", String(userProfile.houseRulesPreference || ""))
 }
 
@@ -63,9 +59,11 @@ if (currentUser) {
     const budget = Number(formData.get("budget") || 15000)
     // Room type (radio)
     const roomType = formData.get("roomType") || "room-only"
-    // Amenities (checkboxes)
-    const amenities = []
-    quizForm.querySelectorAll('input[name="amenities"]:checked').forEach((el) => amenities.push(el.value))
+    const amenities = Array.isArray(currentProfile?.preferredAmenities)
+      ? currentProfile.preferredAmenities
+      : Array.isArray(currentUser?.preferredAmenities)
+        ? currentUser.preferredAmenities
+        : []
     // House rules (textarea)
     const houseRules = formData.get("houseRules") || ""
 

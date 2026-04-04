@@ -111,13 +111,9 @@ function applyUnifiedNav() {
   const currentUser = getCurrentUser()
   const role = String(currentUser?.role || "").toLowerCase()
   const intent = String(currentUser?.intent || "").toLowerCase()
-  const preferredRoomType = String(currentUser?.preferredRoomType || "").toLowerCase()
 
   const isOwner = role === "owner" || intent === "owner"
-  const isStudent =
-    Boolean(currentUser) &&
-    !isOwner &&
-    (role === "student" || (intent === "seeker" && preferredRoomType === "room-only"))
+  const isStudent = Boolean(currentUser) && !isOwner
   let roleLinks = `
     <a data-nav href="/">Home</a>
     <a data-nav href="/browse">Browse</a>

@@ -146,8 +146,10 @@ window.addEventListener("DOMContentLoaded", async () => {
           controls.minRent.value = profile.preferredRentMin;
         if (controls.maxRent && profile.preferredRentMax)
           controls.maxRent.value = profile.preferredRentMax;
-        if (controls.flatType && profile.preferredRoomType)
-          controls.flatType.value = profile.preferredRoomType;
+        if (controls.flatType && profile.preferredRoomType) {
+          const preferred = String(profile.preferredRoomType || "").toLowerCase();
+          controls.flatType.value = preferred === "both" ? "all" : preferred;
+        }
       }
     } catch {}
   }

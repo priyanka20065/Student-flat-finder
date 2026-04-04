@@ -247,14 +247,44 @@ function getUniqueUserMessageCount(flat) {
   return uniqueSenders.size
 }
 
+function getValidSharedBookedUserIds(flatId) {
+  const metrics = getFlatMetrics(flatId)
+  const rawIds = Array.isArray(metrics.roommateBookedUserIds) ? metrics.roommateBookedUserIds : []
+  return [...new Set(
+    rawIds
+      .map((item) => String(item || "").trim())
+      .filter((userId) => Boolean(userId && state.users.has(userId))),
+  )]
+}
+
+function getActiveSharedOccupantUserIds(flat) {
+  if (!flat || String(flat.flatType || "") !== "room-with-roommates") {
+    return []
+  }
+
+  const profileUserIds = (Array.isArray(flat.roommates) ? flat.roommates : [])
+    .map((roommateId) => state.roommates.find((roommate) => roommate.id === roommateId))
+    .filter(Boolean)
+    .map((roommate) => String(roommate.createdByUserId || roommate.purchasedByUserId || "").trim())
+    .filter((userId) => Boolean(userId && state.users.has(userId)))
+
+  const metricsUserIds = getValidSharedBookedUserIds(flat.id)
+  return [...new Set([...profileUserIds, ...metricsUserIds])]
+}
+
 function getOwnerFlatStats(flat) {
   const metrics = getFlatMetrics(flat?.id)
   const buyerUser = metrics.purchasedByUserId ? state.users.get(metrics.purchasedByUserId) : null
+  const activeSharedOccupants = getActiveSharedOccupantUserIds(flat)
+  const maxOccupants = Math.max(1, toNumber(flat?.maxOccupants, 1))
   return {
     uniqueMessageUsers: getUniqueUserMessageCount(flat),
     views: metrics.viewedBy.length,
     likes: metrics.likedBy.length,
     purchasedByUserId: metrics.purchasedByUserId,
+    roommateBookedUserIds: getValidSharedBookedUserIds(flat?.id),
+    currentOccupants: activeSharedOccupants.length,
+    vacancies: Math.max(0, maxOccupants - activeSharedOccupants.length),
     purchasedByName: buyerUser?.name || null,
     isSold: Boolean(metrics.purchasedByUserId),
   }
@@ -306,7 +336,12 @@ function hasAnyRoomBookedByUser(userId) {
     return false
   }
 
-  return Boolean(getPurchasedFlatIdByUser(normalizedUserId)) || hasUserBookedAnyRoommate(normalizedUserId)
+  const hasSharedFlatSeat = Object.values(state.flatMetrics).some((rawMetrics) => {
+    const metrics = normalizeFlatMetrics(rawMetrics)
+    return Array.isArray(metrics.roommateBookedUserIds) && metrics.roommateBookedUserIds.includes(normalizedUserId)
+  })
+
+  return Boolean(getPurchasedFlatIdByUser(normalizedUserId)) || hasUserBookedAnyRoommate(normalizedUserId) || hasSharedFlatSeat
 }
 
 function hasRoommateSeatAvailable(roommate) {
@@ -387,10 +422,12 @@ function enrichFlat(flat) {
   const roommateProfiles = flat.roommates
     .map((roommateId) => state.roommates.find((roommate) => roommate.id === roommateId))
     .filter(Boolean)
+  const activeRoommateIds = roommateProfiles.map((roommate) => roommate.id)
 
   const [lat, lng] = flat.location.coordinates
   return {
     ...flat,
+    roommates: activeRoommateIds,
     roommateProfiles,
     distanceFromCampusKm: Number(haversineDistanceKm(CAMPUS.lat, CAMPUS.lng, lat, lng).toFixed(1)),
     stats: getOwnerFlatStats(flat),

@@ -358,9 +358,14 @@ async function loadOwnerListings() {
           console.log('[DEBUG] Rendering owner listing card:', flat);
           const isShared = flat.maxOccupants && flat.maxOccupants > 1;
           // Only count students (roommates), never owner
-          const current = Array.isArray(flat.roommates) ? flat.roommates.length : 0;
+          const current = Number.isFinite(Number(flat.stats?.currentOccupants))
+            ? Number(flat.stats.currentOccupants)
+            : (Array.isArray(flat.roommates) ? flat.roommates.length : 0)
           const max = flat.maxOccupants || 1;
           const vacancies = Math.max(0, max - current);
+          const saleStatusLabel = isShared
+            ? (flat.stats?.isSold ? "✅ Sold" : "🟢 Available")
+            : (flat.stats?.isSold ? `✅ Sold to ${flat.stats?.purchasedByName || "buyer"}` : "🟢 Available")
           // Add a direct URL to view the flat listing
           const flatUrl = `/browse?flatId=${encodeURIComponent(flat.id)}`;
           return `
@@ -370,6 +375,7 @@ async function loadOwnerListings() {
               <p class="muted">${flat.location.address}</p>
               <p><strong>${window.AppUtils.formatINR(flat.rent)}</strong> / month</p>
               <p>Room Type: <strong>${isShared ? "Shared" : "Single"}</strong></p>
+              <p>Sale Status: <strong>${saleStatusLabel}</strong></p>
               ${isShared ? `<p>Current Occupants: <strong>${current}</strong></p>` : ""}
               ${isShared ? `<p>Vacancies: <strong>${vacancies}</strong></p>` : ""}
               <p><a href="${flatUrl}" class="btn btn-link" target="_blank">View Your Listing</a></p>
