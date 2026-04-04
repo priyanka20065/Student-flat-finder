@@ -50,23 +50,71 @@ app.use('/uploads', (req, res, next) => {
 const browseSubscribers = new Set()
 const chatSubscribers = {}
 
+function getSmtpTransportOptions() {
+  const timeoutMs = Number(process.env.SMTP_TIMEOUT_MS || 15000)
+  const base = {
+    host: smtpConfig.host,
+    auth: {
+      user: smtpConfig.user,
+      pass: smtpConfig.pass,
+    },
+    connectionTimeout: timeoutMs,
+    greetingTimeout: timeoutMs,
+    socketTimeout: timeoutMs,
+    tls: {
+      minVersion: "TLSv1.2",
+    },
+  }
+
+  const attempts = [
+    {
+      ...base,
+      port: smtpConfig.port,
+      secure: smtpConfig.secure,
+    },
+  ]
+
+  // Gmail frequently works better on 465 from cloud hosts when 587 is throttled.
+  if (String(smtpConfig.host || "").toLowerCase() === "smtp.gmail.com") {
+    attempts.push({ ...base, port: 465, secure: true })
+    attempts.push({ ...base, port: 587, secure: false })
+  }
+
+  const deduped = []
+  const seen = new Set()
+  attempts.forEach((item) => {
+    const key = `${item.host}:${item.port}:${item.secure}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      deduped.push(item)
+    }
+  })
+
+  return deduped
+}
+
 // Mailer Service Setup
 const mailEnabled = Boolean(smtpConfig.host && smtpConfig.user && smtpConfig.pass)
 const sendEmail = async ({ to, subject, text, html }) => {
   if (!mailEnabled) return false
   const nodemailer = require("nodemailer")
+  let lastError = null
+
+  const transports = getSmtpTransportOptions()
+  for (const transportOptions of transports) {
+    try {
+      const transporter = nodemailer.createTransport(transportOptions)
+      await transporter.sendMail({ from: smtpConfig.from, to, subject, text, html })
+      return true
+    } catch (error) {
+      lastError = error
+    }
+  }
+
   try {
-    const transporter = nodemailer.createTransport({
-      host: smtpConfig.host,
-      port: smtpConfig.port,
-      secure: smtpConfig.secure,
-      auth: {
-        user: smtpConfig.user,
-        pass: smtpConfig.pass,
-      },
-    })
-    await transporter.sendMail({ from: smtpConfig.from, to, subject, text, html })
-    return true
+    const reason = String(lastError?.message || "Unknown email transport failure")
+    console.error("Email send failed:", reason)
+    return false
   } catch (error) {
     console.error("Email send failed:", error.message)
     return false
