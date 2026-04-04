@@ -2,7 +2,7 @@
 function resolveImageUrl(url) {
   if (!url) return "/assets/modern-apartment-living.png";
   if (url.startsWith("/uploads/")) {
-    return "http://localhost:4001" + url;
+    return window.AppUtils.resolveBackendUrl(url);
   }
   return url;
 }
@@ -823,9 +823,9 @@ async function openBookModal(flat) {
             })
             console.log("[booking] verify response", verify)
             if (verify.verified) {
-              if (flat.flatType === "room-with-roommates" && verify.bookingOnboarding?.required) {
-                const targetFlatId = encodeURIComponent(verify.bookingOnboarding.flatId || flat.id)
-                const targetUserId = encodeURIComponent(verify.bookingOnboarding.userId || currentUser.id)
+              if (flat.flatType === "room-with-roommates") {
+                const targetFlatId = encodeURIComponent(verify.bookingOnboarding?.flatId || flat.id)
+                const targetUserId = encodeURIComponent(verify.bookingOnboarding?.userId || currentUser.id)
                 bookStatus.textContent = "Payment successful. Redirecting to roommate details form..."
                 setTimeout(() => {
                   window.location.href = `/roommate-onboard.html?flatId=${targetFlatId}&userId=${targetUserId}`

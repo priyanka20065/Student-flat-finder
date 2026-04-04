@@ -98,10 +98,9 @@ signupForm?.addEventListener("submit", async (event) => {
       body: JSON.stringify(payload),
     });
     window.AppUtils.setCurrentUser(user);
+    const redirectUrl = resolveRedirect(user);
     signupStatus.textContent = "Signup successful. Redirecting...";
-    setTimeout(() => {
-      window.location.href = resolveRedirect(user);
-    }, 900);
+    window.location.replace(redirectUrl);
   } catch (error) {
     if (error?.status === 409) {
       signupStatus.textContent = "This email is already registered. Please use Login or try another email.";
