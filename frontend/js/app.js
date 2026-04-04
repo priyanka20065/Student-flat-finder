@@ -1,8 +1,10 @@
 const path = window.location.pathname
+const isLocalHost = /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname)
 const API_BASE_URL = String(
   window.VITE_API_BASE_URL ||
   window.__APP_CONFIG__?.VITE_API_BASE_URL ||
   document.documentElement?.dataset?.apiBaseUrl ||
+  (isLocalHost ? "" : "https://student-flat-finder-backend.onrender.com") ||
   "",
 )
   .trim()
