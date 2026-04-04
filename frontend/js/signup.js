@@ -8,6 +8,7 @@ const signupStep2 = document.getElementById("signupStep2");
 const nextStepBtn = document.getElementById("nextStepBtn");
 const prevStepBtn = document.getElementById("prevStepBtn");
 const universityInput = document.getElementById("universityInput");
+const universityLabel = document.getElementById("universityLabel");
 
 function syncUniversityRequirement() {
   const isOwner = intentInput?.value === "owner";
@@ -17,6 +18,9 @@ function syncUniversityRequirement() {
 
   universityInput.required = !isOwner;
   universityInput.disabled = isOwner;
+  if (universityLabel) {
+    universityLabel.style.display = isOwner ? "none" : "";
+  }
   if (isOwner) {
     universityInput.value = "";
     universityInput.placeholder = "Not required for owner signup";
@@ -99,6 +103,10 @@ signupForm?.addEventListener("submit", async (event) => {
       window.location.href = resolveRedirect(user);
     }, 900);
   } catch (error) {
-    signupStatus.textContent = error.message;
+    if (error?.status === 409) {
+      signupStatus.textContent = "This email is already registered. Please use Login or try another email.";
+      return;
+    }
+    signupStatus.textContent = error.message || "Signup failed. Please try again.";
   }
 });

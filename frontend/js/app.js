@@ -1,4 +1,5 @@
 const path = window.location.pathname
+const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "")
 
 function injectGlobalFooter() {
   if (document.querySelector("[data-global-footer]")) {
@@ -85,7 +86,10 @@ function ensureLoggedIn(redirectTo = "/login") {
 }
 
 async function api(pathname, options = {}) {
-  const response = await fetch(pathname, {
+  const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`
+  const targetUrl = pathname.startsWith("http") ? pathname : `${API_BASE_URL}${normalizedPath}` || normalizedPath
+
+  const response = await fetch(targetUrl, {
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -96,10 +100,26 @@ async function api(pathname, options = {}) {
   const payload = await response.json().catch(() => ({}))
 
   if (!response.ok) {
-    throw new Error(payload.message || "Request failed")
+    const error = new Error(payload.message || "Request failed")
+    error.status = response.status
+    error.payload = payload
+    throw error
   }
 
   return payload
+}
+
+function resolveBackendUrl(pathname) {
+  if (!pathname) {
+    return pathname
+  }
+
+  if (pathname.startsWith("http")) {
+    return pathname
+  }
+
+  const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`
+  return `${API_BASE_URL}${normalizedPath}` || normalizedPath
 }
 
 function applyUnifiedNav() {
@@ -406,6 +426,7 @@ window.AppUtils = {
   logout,
   ensureLoggedIn,
   api,
+  resolveBackendUrl,
   haversineDistanceKm,
   getRoadDistanceKm,
   geocodeAddress,
