@@ -14,6 +14,14 @@
       "destination": "/flat"
     },
     {
+      "source": "/roommate/profile",
+      "destination": "/roommate/profile"
+    },
+    {
+      "source": "/roommate/profile.html",
+      "destination": "/roommate/profile"
+    },
+    {
       "source": "/roommate/:path*",
       "destination": "/roommate"
     }

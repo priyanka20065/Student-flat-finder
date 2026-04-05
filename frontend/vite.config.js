@@ -96,6 +96,7 @@ export default defineConfig(({ mode }) => {
                 profile: resolve(__dirname, 'profile/index.html'),
                 reviews: resolve(__dirname, 'reviews/index.html'),
                 roommate: resolve(__dirname, 'roommate/index.html'),
+                roommateProfile: resolve(__dirname, 'roommate/profile.html'),
                 signup: resolve(__dirname, 'signup/index.html'),
                 subscription: resolve(__dirname, 'subscription/index.html'),
                 notFound: resolve(__dirname, '404.html'),

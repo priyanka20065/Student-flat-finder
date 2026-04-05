@@ -9,6 +9,8 @@ const nextStepBtn = document.getElementById("nextStepBtn");
 const prevStepBtn = document.getElementById("prevStepBtn");
 const universityInput = document.getElementById("universityInput");
 const universityLabel = document.getElementById("universityLabel");
+const signupSubmitBtn = signupForm?.querySelector('button[type="submit"]');
+let signupInProgress = false;
 
 function syncUniversityRequirement() {
   const isOwner = intentInput?.value === "owner";
@@ -35,6 +37,18 @@ function resolveRedirect(user) {
     return "/dashboard";
   }
   return "/personality-quiz?onboarding=1";
+}
+
+function buildLoginRedirect(email = "", intent = "seeker") {
+  const params = new URLSearchParams();
+  if (email) {
+    params.set("email", String(email).trim());
+  }
+  if (intent) {
+    params.set("intent", String(intent).trim().toLowerCase());
+  }
+  params.set("next", "/personality-quiz?onboarding=1");
+  return `/login?${params.toString()}`;
 }
 
 if (nextStepBtn && signupStep1 && signupStep2) {
@@ -79,6 +93,16 @@ syncUniversityRequirement();
 
 signupForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (signupInProgress) {
+    return;
+  }
+
+  signupInProgress = true;
+  if (signupSubmitBtn) {
+    signupSubmitBtn.disabled = true;
+    signupSubmitBtn.textContent = "SIGNING UP...";
+  }
+
   // Collect all form data from both steps
   const formData = new FormData(signupForm);
   // Amenities: collect all checked
@@ -87,6 +111,11 @@ signupForm?.addEventListener("submit", async (event) => {
   const payload = Object.fromEntries(formData.entries());
   if (payload.intent !== "owner" && !String(payload.university || "").trim()) {
     signupStatus.textContent = "College / University is required for student signup.";
+    signupInProgress = false;
+    if (signupSubmitBtn) {
+      signupSubmitBtn.disabled = false;
+      signupSubmitBtn.textContent = "SIGN UP";
+    }
     return;
   }
   payload.amenities = amenities;
@@ -103,9 +132,32 @@ signupForm?.addEventListener("submit", async (event) => {
     window.location.replace(redirectUrl);
   } catch (error) {
     if (error?.status === 409) {
-      signupStatus.textContent = "This email is already registered. Please use Login or try another email.";
-      return;
+      try {
+        const existingUser = await window.AppUtils.api("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify({
+            email: payload.email,
+            password: payload.password,
+            intent: payload.intent,
+          }),
+        });
+        window.AppUtils.setCurrentUser(existingUser);
+        signupStatus.textContent = "Account already exists. Logging you in...";
+        window.location.replace(resolveRedirect(existingUser));
+      } catch (_loginError) {
+        signupStatus.textContent = "This email is already registered. Redirecting you to Login...";
+        setTimeout(() => {
+          window.location.href = buildLoginRedirect(payload.email, payload.intent);
+        }, 700);
+      }
+    } else {
+      signupStatus.textContent = error.message || "Signup failed. Please try again.";
     }
-    signupStatus.textContent = error.message || "Signup failed. Please try again.";
+  } finally {
+    signupInProgress = false;
+    if (signupSubmitBtn) {
+      signupSubmitBtn.disabled = false;
+      signupSubmitBtn.textContent = "SIGN UP";
+    }
   }
 });
