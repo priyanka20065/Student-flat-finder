@@ -348,7 +348,7 @@ function buildFlatPage(flat) {
               <tr>
                 <td>${cleanQuotes(rm.name) || '-'}</td>
                 <td>${rm.email || '-'}</td>
-                <td>${rm.email ? `<a class='btn btn-secondary btn-profile' href='/roommate/profile.html?email=${encodeURIComponent(rm.email)}'>View Profile</a>` : '-'}</td>
+                <td>${rm.email ? `<a class='btn btn-secondary btn-profile' href='/roommate/profile?email=${encodeURIComponent(rm.email)}'>View Profile</a>` : '-'}</td>
               </tr>
             `).join('')}
         </tbody>
@@ -549,6 +549,19 @@ function buildFlatPage(flat) {
   }
 
   if (!isOwnerViewingOwnFlat) {
+    container.querySelectorAll(".btn-profile").forEach((profileLink) => {
+      profileLink.addEventListener("click", (event) => {
+        const targetHref = profileLink.getAttribute("href")
+        if (!targetHref) {
+          return
+        }
+
+        // Force reliable navigation from dynamic HTML fragments in all browsers.
+        event.preventDefault()
+        window.location.assign(targetHref)
+      })
+    })
+
     document.getElementById("chatOwnerBtn")?.addEventListener("click", () => openChatModal(flat))
     document.getElementById("bookRoomBtn")?.addEventListener("click", () => openBookModal(flat))
     document.getElementById("likeFlatBtn")?.addEventListener("click", () => toggleLike(flat))

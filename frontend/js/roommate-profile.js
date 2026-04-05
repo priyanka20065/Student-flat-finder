@@ -10,10 +10,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
-    // Fetch all users and roommates (for demo, you may want to optimize this in real app)
-    const res = await fetch(`/api/roommate/profile?email=${encodeURIComponent(email)}`);
-    if (!res.ok) throw new Error("Roommate not found");
-    const rm = await res.json();
+    const rm = await window.AppUtils.api(`/api/roommate/profile?email=${encodeURIComponent(email)}`);
     // Helper for missing info
     const badge = '<span class="profile-badge">Not specified</span>';
     const icon = (svg) => `<span class="icon">${svg}</span>`;
