@@ -3456,3 +3456,153 @@ select option {
     min-height: 280px;
   }
 }
+
+/* Global phone alignment overrides */
+@media (max-width: 768px) {
+  .nav {
+    align-items: stretch;
+  }
+
+  .nav nav {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+    align-items: stretch;
+  }
+
+  .nav nav a,
+  .nav nav .btn {
+    width: 100%;
+    margin: 0;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .page,
+  .page-wide,
+  .map-page,
+  .page-intro,
+  .hero,
+  .browse-layout {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+  }
+
+  .page-intro-inner,
+  .card,
+  .results,
+  .filters,
+  .list,
+  .detail-card,
+  .dashboard-panel,
+  .feedback-side-panel,
+  .feedback-form-panel,
+  .profile-shell,
+  .modal-card {
+    border-radius: 12px;
+  }
+
+  .feedback-shell,
+  .feedback-form-panel,
+  .profile-form-grid,
+  .dashboard-panel,
+  .list,
+  .results,
+  .simple-form {
+    padding: 0.85rem;
+  }
+
+  .feedback-shell-modern,
+  .dashboard-shell,
+  .flat-layout,
+  .roommate-msg-shell,
+  .subscription-plan-grid,
+  .subscription-benefits-grid,
+  .map-page,
+  .browse-layout,
+  .chat-page .chat-shell {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .flat-media-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .flat-thumb-rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(74px, 1fr);
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: none;
+  }
+
+  .modal-shell {
+    width: 96vw;
+    max-width: 96vw;
+  }
+
+  .modal-body {
+    max-height: 48vh;
+  }
+
+  .modal-form,
+  .chat-compose,
+  .dashboard-reco-bottom,
+  .modal-actions,
+  .map-route-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .roommate-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .list-tab-wrap,
+  .profile-tabs {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .list-tab-wrap .tab-btn,
+  .profile-tabs .tab-btn {
+    flex: 0 0 auto;
+  }
+
+  .chat-page .chat-list-pane {
+    max-height: 34vh;
+    min-height: 0;
+  }
+
+  .chat-page .chat-thread-pane {
+    min-height: 54vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav nav {
+    grid-template-columns: 1fr;
+  }
+
+  .page-intro h1,
+  .results h1,
+  .page h1,
+  .hero h1 {
+    font-size: 1.35rem;
+  }
+
+  .flat-hero-image {
+    min-height: 190px;
+    max-height: 250px;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    gap: 0.5rem 0.8rem;
+  }
+}
