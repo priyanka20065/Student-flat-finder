@@ -60,7 +60,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       social: socialInput.value,
     };
     try {
-      const res = await fetch(window.AppUtils.resolveBackendUrl("/api/roommate/onboard"), {
+      const res = await fetch("/api/roommate/onboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

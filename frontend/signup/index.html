@@ -37,66 +37,51 @@
         <h1 class="login-title">Create your<br>account</h1>
         <div class="login-subtext">Or <a href="/login">sign in to existing account</a></div>
         <p id="signupStatus" class="auth-status" style="color:red; text-align:center;"></p>
-        <form id="clerkProfilePrep" class="auth-modern-form" autocomplete="off">
+        <form id="signupForm" class="auth-modern-form" autocomplete="off">
           <div class="login-role-group">
             <button type="button" class="role-btn active" id="role-student">Student</button>
             <button type="button" class="role-btn" id="role-owner">Property Owner</button>
           </div>
-          <input type="hidden" id="intentInput" value="seeker" />
+          <input type="hidden" id="intentInput" name="intent" value="seeker" />
+          <label>Full Name
+            <input type="text" name="name" required placeholder="Your Name" />
+          </label>
+          <label>Email address
+            <input type="email" name="email" required placeholder="Enter your email" />
+          </label>
           <label id="universityLabel">College / University
-            <input id="universityInput" type="text" placeholder="Your college or university" />
+            <input id="universityInput" type="text" name="university" required placeholder="Your college or university" />
           </label>
-          <label>Course (Optional)
-            <input id="courseInput" type="text" placeholder="Your course" />
+          <label>Password
+            <input type="password" name="password" required placeholder="Create a password" />
           </label>
-          <button class="auth-modern-btn login-signin-btn" type="submit">Continue</button>
+          <label>Confirm Password
+            <input type="password" name="confirmPassword" required placeholder="Confirm password" />
+          </label>
+          <button class="auth-modern-btn login-signin-btn" type="submit">SIGN UP</button>
         </form>
-        <div id="clerkSignUpMount" class="auth-modern-form" style="display:none;"></div>
       </div>
     </div>
     <script>
-      // Toggle role and university requirement
+      // Toggle role button active state
       document.addEventListener('DOMContentLoaded', function() {
         const studentBtn = document.getElementById('role-student');
         const ownerBtn = document.getElementById('role-owner');
         const intentInput = document.getElementById('intentInput');
-        const universityInput = document.getElementById('universityInput');
-        const universityLabel = document.getElementById('universityLabel');
-
-        function syncRoleUi() {
-          const isOwner = intentInput.value === 'owner';
-          if (universityInput) {
-            universityInput.required = !isOwner;
-            universityInput.disabled = isOwner;
-            universityInput.placeholder = isOwner ? 'Not required for owner signup' : 'Your college or university';
-          }
-          if (universityLabel) {
-            universityLabel.style.display = isOwner ? 'none' : '';
-          }
-        }
-
         studentBtn.addEventListener('click', function() {
           studentBtn.classList.add('active');
           ownerBtn.classList.remove('active');
-          intentInput.value = 'seeker';
-          syncRoleUi();
+          if (intentInput) intentInput.value = 'seeker';
         });
         ownerBtn.addEventListener('click', function() {
           ownerBtn.classList.add('active');
           studentBtn.classList.remove('active');
-          intentInput.value = 'owner';
-          syncRoleUi();
+          if (intentInput) intentInput.value = 'owner';
         });
-
-        syncRoleUi();
       });
     </script>
-    <script>
-      window.CLERK_PUBLISHABLE_KEY = "%VITE_CLERK_PUBLISHABLE_KEY%";
-    </script>
-    <script async crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
     <script src="/js/app.js"></script>
-    <script src="/js/clerk-signup.js"></script>
+    <script src="/js/signup.js"></script>
     <footer class="footer glass-footer">
       <div class="footer-inner">
         <div class="footer-brand">

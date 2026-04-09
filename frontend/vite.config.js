@@ -98,7 +98,6 @@ export default defineConfig(({ mode }) => {
                 roommate: resolve(__dirname, 'roommate/index.html'),
                 roommateProfile: resolve(__dirname, 'roommate/profile.html'),
                 signup: resolve(__dirname, 'signup/index.html'),
-                authCallback: resolve(__dirname, 'auth/callback/index.html'),
                 subscription: resolve(__dirname, 'subscription/index.html'),
                 notFound: resolve(__dirname, '404.html'),
             }

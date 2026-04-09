@@ -9,12 +9,9 @@
     "express:start": "node src/index.js"
   },
   "dependencies": {
-    "@clerk/backend": "^3.2.8",
-    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
-    "jsonwebtoken": "^9.0.3",
     "mongodb": "^6.18.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.14",

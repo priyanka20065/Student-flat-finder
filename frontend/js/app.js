@@ -82,7 +82,7 @@ function setCurrentUser(user) {
 
 function logout() {
   localStorage.removeItem("sff_user")
-  window.location.href = "/login?signout=1"
+  window.location.href = "/login"
 }
 
 function ensureLoggedIn(redirectTo = "/login") {
@@ -97,13 +97,10 @@ function ensureLoggedIn(redirectTo = "/login") {
 async function api(pathname, options = {}) {
   const normalizedPath = pathname.startsWith("/") ? pathname : `/${pathname}`
   const targetUrl = pathname.startsWith("http") ? pathname : `${API_BASE_URL}${normalizedPath}` || normalizedPath
-  const currentUser = getCurrentUser()
-  const authToken = String(currentUser?.token || "").trim()
 
   const response = await fetch(targetUrl, {
     headers: {
       "Content-Type": "application/json",
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(options.headers || {}),
     },
     ...options,
