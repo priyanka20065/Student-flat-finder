@@ -1,6 +1,5 @@
 const crypto = require("crypto")
 const { MongoClient } = require("mongodb")
-const nodemailer = require("nodemailer")
 const multer = require("multer")
 const { uploadsDir } = require("../config/paths")
 
@@ -34,6 +33,5 @@ const imageUpload = multer({
 module.exports = {
   crypto,
   MongoClient,
-  nodemailer,
   imageUpload
 }

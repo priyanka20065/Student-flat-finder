@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Feedback</title>
+    <link rel="stylesheet" crossorigin href="/assets/styles-BCEpaoCl.css">
+  </head>
+  <body>
+    <header class="nav">
+      <a href="/" class="brand">Student Flat Finder</a>
+      <nav>
+        <a data-nav href="/feedback">Feedback</a>
+      </nav>
+    </header>
+
+    <section class="page-intro compact-intro feedback-intro">
+      <div class="page-intro-inner feedback-intro-inner">
+        <h1>We Value Your Feedback</h1>
+        <p>Help us improve Student Flat Finder for everyone</p>
+      </div>
+    </section>
+
+    <main class="page page-wide">
+      <section class="card feedback-shell">
+        <h2 class="feedback-title">Share Feedback</h2>
+        <p class="muted">Tell us what worked well and what we should improve.</p>
+
+        <article class="feedback-submitter" id="feedbackSubmitter"></article>
+
+        <form id="feedbackForm" class="simple-form feedback-form" autocomplete="off">
+          <label class="feedback-label">Overall Rating</label>
+          <div class="feedback-rating-row">
+            <div class="feedback-star-buttons" id="feedbackStarButtons" role="radiogroup" aria-label="Overall rating">
+              <button type="button" class="feedback-star-btn active" data-rating="1" aria-label="Rate 1 star">★</button>
+              <button type="button" class="feedback-star-btn active" data-rating="2" aria-label="Rate 2 stars">★</button>
+              <button type="button" class="feedback-star-btn active" data-rating="3" aria-label="Rate 3 stars">★</button>
+              <button type="button" class="feedback-star-btn active" data-rating="4" aria-label="Rate 4 stars">★</button>
+              <button type="button" class="feedback-star-btn active" data-rating="5" aria-label="Rate 5 stars">★</button>
+            </div>
+            <strong id="feedbackRatingLabel">5/5</strong>
+            <input type="hidden" id="feedbackRatingInput" name="rating" value="5" />
+          </div>
+
+          <label>Feedback Category
+            <select name="category" required>
+              <option>General Feedback</option>
+              <option>UI/Design</option>
+              <option>Bug Report</option>
+              <option>Feature Request</option>
+            </select>
+          </label>
+
+          <label>Subject *
+            <input name="subject" type="text" required placeholder="Brief description of your feedback" />
+          </label>
+
+          <label>Detailed Feedback *
+            <textarea name="message" rows="7" required placeholder="Please provide detailed feedback about your experience..."></textarea>
+          </label>
+
+          <div class="feedback-submit-row">
+            <button class="btn btn-primary" type="submit">Submit Feedback</button>
+          </div>
+          <p id="feedbackStatus" class="status-text"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="/js/app.js"></script>
+    <script>
+          <footer class="footer glass-footer">
+            <div class="footer-inner">
+              <div class="footer-brand">
+                <span class="brand">Student Flat Finder</span>
+                <span class="footer-copy">&copy; 2026 MakeItHappen. All rights reserved.</span>
+              </div>
+              <div class="footer-links">
+                <a href="/browse">Browse</a>
+                <a href="/list">List Flat</a>
+                <a href="/community">Community</a>
+                <a href="/feedback">Feedback</a>
+              </div>
+              <div class="footer-social">
+                <a href="#" title="Instagram" class="footer-social-icon"><svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+                <a href="#" title="Twitter" class="footer-social-icon"><svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53A4.48 4.48 0 0 0 22.4 1.64a9.09 9.09 0 0 1-2.88 1.1A4.48 4.48 0 0 0 16.11 0c-2.5 0-4.5 2.01-4.5 4.5 0 .35.04.7.11 1.03C7.69 5.36 4.07 3.6 1.64 0.16c-.38.65-.6 1.4-.6 2.2 0 1.52.77 2.86 1.94 3.65A4.48 4.48 0 0 1 .96 5.1v.06c0 2.13 1.52 3.91 3.54 4.31-.37.1-.76.16-1.16.16-.28 0-.55-.03-.81-.08.55 1.72 2.16 2.97 4.07 3A9.05 9.05 0 0 1 0 19.54a12.8 12.8 0 0 0 6.92 2.03c8.3 0 12.85-6.88 12.85-12.85 0-.2 0-.39-.01-.58A9.22 9.22 0 0 0 24 4.59a9.1 9.1 0 0 1-2.6.71A4.48 4.48 0 0 0 23 3z"/></svg></a>
+              </div>
+            </div>
+          </footer>
+      const currentUser = window.AppUtils.getCurrentUser()
+      const feedbackForm = document.getElementById("feedbackForm")
+      const feedbackStatus = document.getElementById("feedbackStatus")
+      const feedbackSubmitter = document.getElementById("feedbackSubmitter")
+      const starButtons = Array.from(document.querySelectorAll(".feedback-star-btn"))
+      const ratingInput = document.getElementById("feedbackRatingInput")
+      const ratingLabel = document.getElementById("feedbackRatingLabel")
+
+      function setRating(value) {
+        const rating = Math.max(1, Math.min(5, Number(value || 5)))
+        if (ratingInput) {
+          ratingInput.value = String(rating)
+        }
+        if (ratingLabel) {
+          ratingLabel.textContent = `${rating}/5`
+        }
+        starButtons.forEach((button) => {
+          const buttonRating = Number(button.dataset.rating || 0)
+          button.classList.toggle("active", buttonRating <= rating)
+        })
+      }
+
+      starButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          setRating(button.dataset.rating)
+        })
+      })
+
+      if (feedbackSubmitter) {
+        const userName = currentUser?.name || "Guest"
+        const userEmail = currentUser?.email || "-"
+        const accountType = currentUser?.role === "owner" ? "Owner" : "Student"
+        feedbackSubmitter.innerHTML = `
+          <p><strong>Submitted by</strong></p>
+          <p>${userName}</p>
+          <p>${userEmail}</p>
+          <p>Account Type: ${accountType}</p>
+        `
+      }
+
+      setRating(5)
+
+      feedbackForm?.addEventListener("submit", (event) => {
+        event.preventDefault()
+        feedbackStatus.textContent = "Thanks! Your feedback has been recorded."
+        feedbackForm.reset()
+      })
+    </script>
+  </body>
+</html>

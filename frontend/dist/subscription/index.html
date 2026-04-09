@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Subscription</title>
+    <link rel="stylesheet" crossorigin href="/assets/styles-BCEpaoCl.css">
+  </head>
+  <body>
+    <header class="nav">
+      <a href="/" class="brand">Student Flat Finder</a>
+      <nav>
+        <a data-nav href="/subscription">Subscription</a>
+      </nav>
+    </header>
+
+    <section class="page-intro compact-intro subscription-intro">
+      <div class="page-intro-inner subscription-intro-inner">
+        <h1>Choose Your Plan</h1>
+        <p>Unlock premium features and get the best deals on student accommodations</p>
+      </div>
+    </section>
+
+    <main class="page page-wide">
+      <section class="subscription-plan-grid">
+        <article class="card subscription-plan-card basic-card">
+          <h2>Basic</h2>
+          <p class="subscription-price"><strong>₹0</strong> <span class="muted">Free Forever</span></p>
+          <ul class="subscription-features">
+            <li>✔ Browse all flats</li>
+            <li>✔ Basic filters</li>
+            <li>✔ 5 messages per conversation</li>
+            <li>✔ Standard support</li>
+            <li>✔ Basic profile</li>
+          </ul>
+          <button class="btn btn-light" type="button" disabled>Current Plan</button>
+        </article>
+
+        <article class="card subscription-plan-card premium-card" data-plan-card="Premium">
+          <div class="subscription-tag">Most Popular</div>
+          <h2>Premium</h2>
+          <p class="subscription-price"><strong>₹299</strong> <span class="muted">per month</span></p>
+          <ul class="subscription-features">
+            <li>✔ All Basic features</li>
+            <li>✔ 10% discount on all rentals</li>
+            <li>✔ Unlimited messaging</li>
+            <li>✔ Advanced AI matching</li>
+            <li>✔ Priority support</li>
+            <li>✔ Verified badge</li>
+            <li>✔ Early access to new listings</li>
+            <li>✔ Multiple property alerts</li>
+          </ul>
+          <button class="btn btn-primary" data-plan-btn data-plan="Premium" data-amount="29900" type="button">Get Premium</button>
+        </article>
+
+        <article class="card subscription-plan-card yearly-card" data-plan-card="Premium Yearly">
+          <h2>Premium Yearly</h2>
+          <p class="subscription-price"><strong>₹2,999</strong> <span class="muted">per year</span></p>
+          <ul class="subscription-features">
+            <li>✔ All Premium features</li>
+            <li>✔ 2 months free (save ₹598)</li>
+            <li>✔ Priority customer support</li>
+            <li>✔ Exclusive property previews</li>
+            <li>✔ Advanced analytics</li>
+            <li>✔ Personal account manager</li>
+          </ul>
+          <button class="btn btn-dark" data-plan-btn data-plan="Premium Yearly" data-amount="299900" type="button">Get Yearly Plan</button>
+        </article>
+      </section>
+
+      <section class="subscription-benefits">
+        <h2>Why Go Premium?</h2>
+        <div class="subscription-benefits-grid">
+          <article><h3>Save Money</h3><p>Get 10% discount on all rental payments</p></article>
+          <article><h3>Unlimited Chat</h3><p>Message property owners and roommates without limits</p></article>
+          <article><h3>AI Matching</h3><p>Advanced personality-based roommate matching</p></article>
+          <article><h3>Priority Access</h3><p>Early access to new listings and premium support</p></article>
+        </div>
+      </section>
+
+      <section class="subscription-faq">
+        <h2>Frequently Asked Questions</h2>
+        <article class="card faq-item">
+          <h3>Can I cancel my subscription anytime?</h3>
+          <p>Yes, you can cancel your subscription at any time. You'll continue to have access to premium features until the end of your billing period.</p>
+        </article>
+        <article class="card faq-item">
+          <h3>How does the 10% discount work?</h3>
+          <p>Premium members automatically get 10% off on all rental payments made through our platform. The discount is applied at checkout.</p>
+        </article>
+        <article class="card faq-item">
+          <h3>Is my payment information secure?</h3>
+          <p>Yes, we use Razorpay's secure payment gateway. Your payment information is encrypted and protected.</p>
+        </article>
+      </section>
+
+      <p id="paymentStatus" class="status-text"></p>
+    </main>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/subscription.js"></script>
+  </body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Roommate Listing Detail</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css" />
+    <link rel="stylesheet" crossorigin href="/assets/styles-BCEpaoCl.css">
+  </head>
+  <body>
+    <header class="nav">
+      <a href="/" class="brand">Student Flat Finder</a>
+      <nav>
+        <a data-nav href="/">Home</a>
+        <a data-nav href="/list">Listing</a>
+        <a data-nav href="/dashboard">Dashboard</a>
+      </nav>
+    </header>
+
+    <section class="page-intro compact-intro">
+      <div class="page-intro-inner">
+        <h1>Flat Details</h1>
+        <p>Review listing, budget, preferences and 360 media.</p>
+      </div>
+    </section>
+
+    <main id="roommateDetail" class="page"></main>
+
+    <div id="roommateModalBackdrop" class="modal-backdrop hidden"></div>
+    <section id="roommateChatModal" class="modal-shell hidden" aria-hidden="true"></section>
+
+    <div id="roommateImageLightbox" class="flat-image-lightbox hidden" aria-hidden="true">
+      <button type="button" id="roommateLightboxClose" class="flat-lightbox-close" aria-label="Close image">✕</button>
+      <img id="roommateLightboxImage" src="" alt="Roommate listing image" class="flat-lightbox-image" />
+    </div>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/roommate.js"></script>
+  </body>
+</html>

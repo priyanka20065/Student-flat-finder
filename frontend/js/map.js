@@ -313,14 +313,10 @@ async function loadStudentCollege() {
 }
 
 async function loadMapData() {
-  const [flatResponse, roommateResponse] = await Promise.all([fetch("/api/flats"), fetch("/api/roommates")])
-  if (!flatResponse.ok || !roommateResponse.ok) {
-    mapCount.textContent = "Failed to load listings"
-    mapList.innerHTML = '<li class="muted">Could not load map data.</li>'
-    return
-  }
-
-  const [flats, roommates] = await Promise.all([flatResponse.json(), roommateResponse.json()])
+  const [flats, roommates] = await Promise.all([
+    window.AppUtils.api("/api/flats"),
+    window.AppUtils.api("/api/roommates"),
+  ])
   const flatItems = Array.isArray(flats) ? flats.map((entry) => toMapItem(entry, "flat")) : []
   const roommateItems = Array.isArray(roommates) ? roommates.map((entry) => toMapItem(entry, "roommate")) : []
   allFlats = [...flatItems, ...roommateItems].sort((a, b) => {

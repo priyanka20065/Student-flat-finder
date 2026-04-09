@@ -2,7 +2,7 @@
 function resolveImageUrl(url) {
   if (!url) return "/assets/modern-apartment-living.png";
   if (url.startsWith("/uploads/")) {
-    return "http://localhost:4001" + url;
+    return window.AppUtils.resolveBackendUrl(url);
   }
   return url;
 }

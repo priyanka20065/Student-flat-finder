@@ -568,7 +568,7 @@ async function uploadImages(files, tourFiles) {
     formData.append("tour360", file)
   })
 
-  const response = await fetch("/api/upload/images", {
+  const response = await fetch(window.AppUtils.resolveBackendUrl("/api/upload/images"), {
     method: "POST",
     body: formData,
   })
