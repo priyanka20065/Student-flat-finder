@@ -1,3 +1,6 @@
+const bcrypt = require("bcryptjs")
+const jwt = require("jsonwebtoken")
+
 module.exports = function (app, ctx) {
   // Get roommate profile by email (for profile page)
   app.get("/api/roommate/profile", (req, res) => {
@@ -107,6 +110,60 @@ module.exports = function (app, ctx) {
     browseSubscribers,
     chatSubscribers
   } = ctx;
+
+  const BCRYPT_SALT_ROUNDS = Math.max(10, Number(process.env.BCRYPT_SALT_ROUNDS || 12))
+  const JWT_EXPIRES_IN = String(process.env.JWT_EXPIRES_IN || "7d").trim() || "7d"
+  const JWT_SECRET = String(process.env.JWT_SECRET || "").trim() || "dev-only-secret-change-in-env"
+
+  function isBcryptHash(value) {
+    return /^\$2[aby]\$\d{2}\$/.test(String(value || ""))
+  }
+
+  function issueAuthToken(user) {
+    return jwt.sign(
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        intent: user.intent,
+      },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN },
+    )
+  }
+
+  function readBearerToken(req) {
+    const header = String(req.headers?.authorization || "").trim()
+    if (!header.toLowerCase().startsWith("bearer ")) return null
+    return header.slice(7).trim() || null
+  }
+
+  app.use((req, _res, next) => {
+    const token = readBearerToken(req)
+    if (!token) {
+      req.user = null
+      next()
+      return
+    }
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET)
+      const userId = String(decoded?.sub || "").trim()
+      req.user = userId ? state.users.get(userId) || null : null
+    } catch (_error) {
+      req.user = null
+    }
+
+    next()
+  })
+
+  function requireAuth(req, res, next) {
+    if (!req.user) {
+      res.status(401).json({ message: "Unauthorized. Please login." })
+      return
+    }
+    next()
+  }
   // Roommate onboarding after booking: create/update roommate profile and link to flat
   app.post("/api/roommate/onboard", async (req, res) => {
     const {
@@ -289,11 +346,13 @@ module.exports = function (app, ctx) {
       return
     }
 
+    const hashedPassword = await bcrypt.hash(String(password), BCRYPT_SALT_ROUNDS)
+
     const user = {
       id: makeId("usr"),
       name: String(name).trim(),
       email: normalizedEmail,
-      password: String(password),
+      password: hashedPassword,
       role: intent === "owner" ? "owner" : "roommate",
       intent,
       preferredRoomType: intent === "owner" ? null : String(preferredRoomType || "room-only"),
@@ -341,8 +400,11 @@ module.exports = function (app, ctx) {
       html: `<p>Hi <strong>${user.name}</strong>,</p><p>Welcome to <strong>Student Flat Finder</strong>. Your account is ready as <strong>${welcomeUserType}</strong>. You can now continue with your selected flow.</p><p>— Team Student Flat Finder</p>`,
     })
 
+    const token = issueAuthToken(user)
+
     res.status(201).json({
       ...sanitizeUser(user),
+      token,
       emailNotification: !mailEnabled ? "email-disabled" : emailSent ? "welcome-email-sent" : "welcome-email-failed",
     })
   })
@@ -362,21 +424,39 @@ module.exports = function (app, ctx) {
       return
     }
 
-    if (user.password !== String(password)) {
+    const incomingPassword = String(password)
+    const storedPassword = String(user.password || "")
+
+    let passwordValid = false
+    if (isBcryptHash(storedPassword)) {
+      passwordValid = await bcrypt.compare(incomingPassword, storedPassword)
+    } else {
+      // Backward compatibility for old plaintext records. Auto-migrate after successful login.
+      passwordValid = storedPassword === incomingPassword
+      if (passwordValid) {
+        user.password = await bcrypt.hash(incomingPassword, BCRYPT_SALT_ROUNDS)
+      }
+    }
+
+    if (!passwordValid) {
       res.status(401).json({ message: "Invalid password" })
       return
     }
 
+    let shouldPersistUser = !isBcryptHash(storedPassword) && passwordValid
+
     if (intent) {
       user.intent = intent
       user.role = intent === "owner" ? "owner" : "roommate"
+      shouldPersistUser = true
     }
 
     if (preferredRoomType) {
       user.preferredRoomType = preferredRoomType
+      shouldPersistUser = true
     }
 
-    if (intent || preferredRoomType) {
+    if (shouldPersistUser) {
       try {
         await persistUser(user)
       } catch (error) {
@@ -384,7 +464,15 @@ module.exports = function (app, ctx) {
       }
     }
 
-    res.json(sanitizeUser(user))
+    const token = issueAuthToken(user)
+    res.json({
+      ...sanitizeUser(user),
+      token,
+    })
+  })
+
+  app.get("/api/auth/me", requireAuth, (req, res) => {
+    res.json(sanitizeUser(req.user))
   })
 
   app.get("/api/profile/:userId", (req, res) => {
